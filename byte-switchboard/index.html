@@ -71,13 +71,6 @@
     .out .note { color: var(--gray-dark); font-size: 12px; margin-top: 3px; }
     .out .value .dim { color: var(--gray-dark); }
 
-    /* Das Byte als Farben eurer LED (2 Bit je Farbe) */
-    .swatches { display: flex; gap: 10px; }
-    .swatch {
-      width: 40px; height: 40px; border-radius: 8px;
-      transition: background 0.15s;
-    }
-
     .controls {
       display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
       margin-top: 30px;
@@ -119,11 +112,6 @@
         <div class="label">as text (ascii)</div>
         <div class="value" id="out-ascii"></div>
         <div class="note" id="out-ascii-note"></div>
-      </div>
-      <div class="out">
-        <div class="label">on your led (2 bits per colour)</div>
-        <div class="swatches" id="out-colours"></div>
-        <div class="note">red = 00, green = 01, blue = 10, yellow = 11</div>
       </div>
     </div>
 

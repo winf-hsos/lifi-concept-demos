@@ -2,20 +2,15 @@
  *
  * Ein Byte als acht schaltbare Bits, alle Darstellungen entstehen live:
  * Summenzeile mit den aktiven Stellenwerten, Binaer in Nibbles, Dezimal,
- * Hex, ASCII-Zeichen und das Byte als vier Farben der LiFi-LED (2 Bit je
- * Farbe, Zuordnung wie im Kurs: rot 00, gruen 01, blau 10, gelb 11).
+ * Hex und ASCII-Zeichen. Bewusst KEINE Farbdarstellung des Bytes: Wie
+ * Bits auf Farben abgebildet werden, entscheidet im Kurs jedes Team
+ * selbst, eine vorgegebene Zuordnung wuerde in eine Richtung primen
+ * (Entscheidung vom 02.09.2026).
  * Kein Framework, kein Build: eine Datei, lesbar von oben nach unten. */
 
 "use strict";
 
 const WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];        // MSB zuerst
-const COLOUR_ALPHABET = [
-  { bits: "00", name: "red",    css: "var(--red)" },
-  { bits: "01", name: "green",  css: "var(--green)" },
-  { bits: "10", name: "blue",   css: "var(--blue)" },
-  { bits: "11", name: "yellow", css: "var(--yellow)" },
-];
-
 let value = 0b01000001;                                // 65, das grosse A
 
 // --- Aufbau der Bit-Spalten -------------------------------------------------
@@ -104,19 +99,6 @@ function render() {
   el("out-ascii-note").textContent = printable
     ? `character number ${value} in the ascii agreement`
     : "no printable ascii character at this number";
-
-  // Das Byte als vier Farben (2 Bit je Farbe, MSB zuerst)
-  const box = el("out-colours");
-  box.innerHTML = "";
-  for (let i = 0; i < 8; i += 2) {
-    const pair = bin.slice(i, i + 2);
-    const colour = COLOUR_ALPHABET.find((c) => c.bits === pair);
-    const sw = document.createElement("div");
-    sw.className = "swatch";
-    sw.style.background = colour.css;
-    sw.title = `${pair} = ${colour.name}`;
-    box.appendChild(sw);
-  }
 }
 
 // --- Bedienung --------------------------------------------------------------
