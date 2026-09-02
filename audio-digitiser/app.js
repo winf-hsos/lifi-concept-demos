@@ -61,13 +61,17 @@ function envelope(t, dur) {        // kurzer Anschlag, weiches Ausklingen
 }
 
 function makeMelody() {
-  const notes = [262, 330, 392, 523];   // c4 e4 g4 c5
+  // Beethovens Ode an die Freude, die ersten Takte: gemeinfrei, und
+  // jeder erkennt sie. e e f g g f e d c (e4/f4/g4/d4/c4)
+  const notes = [329.63, 329.63, 349.23, 392.00, 392.00,
+                 349.23, 329.63, 293.66, 261.63];
+  const STEP = 0.275;
   const data = new Float32Array(LEN);
   notes.forEach((f0, n) => {
     // Ganzzahliger Startindex: floor(start*SR + i) wuerde durch
     // Fliesskomma-Rundung einzelne Samples doppelt treffen
-    const base = Math.round(n * 0.58 * SR);
-    for (let i = 0; i < 0.58 * SR; i++) {
+    const base = Math.round(n * STEP * SR);
+    for (let i = 0; i < 0.26 * SR; i++) {
       const t = i / SR;
       const idx = base + i;
       if (idx >= LEN) break;
@@ -75,7 +79,7 @@ function makeMelody() {
       [1, 0.5, 0.25, 0.12].forEach((amp, h) => {
         v += amp * Math.sin(2 * Math.PI * f0 * (h + 1) * t);
       });
-      data[idx] += 0.35 * envelope(t, 0.58) * v;
+      data[idx] += 0.35 * envelope(t, 0.26) * v;
     }
   });
   return data;
