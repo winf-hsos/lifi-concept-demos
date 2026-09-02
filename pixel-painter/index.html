@@ -83,6 +83,26 @@
     }
     .summary .on { color: var(--white); }
 
+    .presets {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin: 0 0 18px;
+    }
+    .presets .plabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .presets button {
+      width: 40px; height: 40px;
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      padding: 3px;
+      cursor: pointer;
+      line-height: 0;
+    }
+    .presets button:hover { border-color: var(--gray); }
+    .presets button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
     .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; }
     .controls .hint { width: 100%; text-align: center; }
 
@@ -117,6 +137,8 @@
 
     <div class="summary">64 pixels = 64 bits = 8 bytes &middot; <span class="on" id="st-on"></span> pixels on</div>
 
+    <div class="presets" id="presets"><span class="plabel">start from:</span></div>
+
     <div class="controls">
       <button class="ctrl" id="btn-break">break a byte</button>
       <button class="ctrl" id="btn-bit">flip one bit</button>
@@ -135,6 +157,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

@@ -18,10 +18,17 @@
 
 const SIZE = 8;
 
-/* Startbild: ein Herz, damit die Byte-Spalte sofort etwas zeigt. */
-const HEART = [0x00, 0x66, 0xff, 0xff, 0x7e, 0x3c, 0x18, 0x00];
+/* Vordefinierte Bilder, je acht Bytes. Das Herz ist das Startbild,
+ * damit die Byte-Spalte sofort etwas zeigt. */
+const PRESETS = [
+  { name: "heart",    data: [0x00, 0x66, 0xff, 0xff, 0x7e, 0x3c, 0x18, 0x00] },
+  { name: "smiley",   data: [0x3c, 0x42, 0xa5, 0x81, 0xa5, 0x99, 0x42, 0x3c] },
+  { name: "invader",  data: [0x18, 0x3c, 0x7e, 0xdb, 0xff, 0x24, 0x5a, 0xa5] },
+  { name: "arrow",    data: [0x08, 0x0c, 0xfe, 0xff, 0xfe, 0x0c, 0x08, 0x00] },
+  { name: "letter a", data: [0x18, 0x3c, 0x66, 0x66, 0x7e, 0x66, 0x66, 0x00] },
+];
 
-const bytes = new Uint8Array(HEART);
+const bytes = new Uint8Array(PRESETS[0].data);
 let snapshot = null;             // heiler Stand vor der ersten Stoerung
 const damaged = new Set();       // Zellindizes (r*8+c) mit Schaden
 
@@ -67,6 +74,32 @@ for (let r = 0; r < SIZE; r++) {
   hexEls.push(hex);
   rowEls.push(row);
 }
+
+/* Preset-Knoepfe: jedes Bild malt sich als Mini-Vorschau selbst. */
+const presetsEl = el("presets");
+PRESETS.forEach((preset) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.setAttribute("aria-label", `load preset: ${preset.name}`);
+  b.title = preset.name;
+  const cv = document.createElement("canvas");
+  cv.width = 32;
+  cv.height = 32;
+  const g = cv.getContext("2d");
+  g.fillStyle = "#ffffff";
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if ((preset.data[r] >> (7 - c)) & 1) g.fillRect(c * 4, r * 4, 4, 4);
+    }
+  }
+  b.appendChild(cv);
+  b.addEventListener("click", () => {
+    touched();
+    bytes.set(preset.data);
+    render();
+  });
+  presetsEl.appendChild(b);
+});
 
 // --- Anzeige ----------------------------------------------------------------
 function render() {
