@@ -96,11 +96,16 @@ function newWindow(t0) {
   win = { t0, sum: 0, n: 0, tally: new Array(16).fill(0) };
 }
 
+/* Der naechste faellige Rohwert lebt UEBER die Frames hinweg: Bei starker
+ * Zeitlupe schreitet ein einzelner Frame weniger als RAW_DT voran, und
+ * eine Schleife, die jedes Mal bei simTime neu ansetzt, kaeme nie an. */
+let nextRawAt = RAW_DT;
+
 function step(dtMs) {
-  let t = simTime;
   const end = simTime + dtMs;
-  while (t + RAW_DT <= end) {
-    t += RAW_DT;
+  while (nextRawAt <= end) {
+    const t = nextRawAt;
+    nextRawAt += RAW_DT;
     simTime = t;
     const v = levels()[state.current] + gaussian() * SIGMA_RAW
             + disturbanceOffset();
