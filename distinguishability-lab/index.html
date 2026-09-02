@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>distinguishability lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .lab-canvas {
+      width: 100%;
+      height: 380px;
+      display: block;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      margin: 18px 0 6px;
+    }
+    .sim-note { color: var(--gray-dark); font-size: 12px; text-align: right; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px 24px;
+      margin: 18px 0 8px;
+    }
+    .stat .label { color: var(--gray); font-size: 13px; }
+    .stat .value { font-family: var(--mono); font-size: clamp(22px, 4vw, 32px); }
+    .stat .value.bad { color: var(--red); }
+    .stat .value.good { color: var(--green); }
+    .stat .note { color: var(--gray-dark); font-size: 12px; }
+
+    .panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px 32px;
+      border-top: 1px solid var(--gray-dark);
+      padding-top: 18px;
+      margin-top: 8px;
+    }
+    .knob .label { color: var(--gray); font-size: 13px; margin-bottom: 6px; }
+    .knob .reading { font-family: var(--mono); color: var(--gray-light); font-size: 14px; margin-top: 2px; }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+
+    .seg { display: flex; gap: 8px; }
+    .seg button {
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 16px;
+      padding: 8px 0;
+      background: none;
+      color: var(--gray-light);
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .seg button[aria-pressed="true"] {
+      background: var(--white);
+      color: var(--bg);
+      border-color: var(--white);
+    }
+
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 24px 0 4px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>distinguishability lab</h1>
+    <p class="subtitle">how many symbols does your channel really support? turn the knobs and watch the error rate.</p>
+
+    <canvas class="lab-canvas" id="lab" aria-hidden="true"></canvas>
+    <div class="sim-note">simulated noise &mdash; the real numbers come from measuring your own link.</div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">error rate</div>
+        <div class="value" id="st-err">&ndash;</div>
+        <div class="note">of the last 400 symbols</div>
+      </div>
+      <div class="stat">
+        <div class="label">symbol rate</div>
+        <div class="value" id="st-rate">&ndash;</div>
+        <div class="note">one symbol per window</div>
+      </div>
+      <div class="stat">
+        <div class="label">bits per symbol</div>
+        <div class="value" id="st-bits">&ndash;</div>
+        <div class="note" id="st-bits-note"></div>
+      </div>
+      <div class="stat">
+        <div class="label">throughput if error-free</div>
+        <div class="value" id="st-tp">&ndash;</div>
+        <div class="note">rate &times; bits per symbol</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="knob">
+        <div class="label">symbols in the alphabet</div>
+        <div class="seg" id="seg-k" role="group" aria-label="symbols in the alphabet">
+          <button data-k="2">2</button>
+          <button data-k="4">4</button>
+          <button data-k="8">8</button>
+          <button data-k="16">16</button>
+        </div>
+        <div class="reading">more symbols: more bits, smaller gaps</div>
+      </div>
+      <div class="knob">
+        <div class="label">measurement window (integration time)</div>
+        <input type="range" id="in-win" min="5" max="200" step="5" value="50" aria-label="measurement window in milliseconds">
+        <div class="reading" id="rd-win"></div>
+      </div>
+      <div class="knob">
+        <div class="label">signal strength (light on the sensor)</div>
+        <input type="range" id="in-range" min="25" max="100" step="5" value="100" aria-label="signal strength in percent">
+        <div class="reading" id="rd-range"></div>
+      </div>
+    </div>
+
+    <div class="takeaway">longer windows calm the readings and cost rate. more symbols carry more bits and shrink the gaps.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/signal-and-noise.html">signal und rauschen</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
