@@ -1,25 +1,27 @@
 /* distinguishability lab — signal und rauschen.
  *
- * Ein simulierter Kanal als kleines Oszilloskop: Der Besucher SENDET
- * selbst ein Symbol (Klick auf die Spur, Zifferntasten, Pfeiltasten),
- * und der Messstrom zeigt als geglaettete Kurve, wie die verrauschten
- * Messungen um den gesendeten Pegel entstehen. Rutscht eine Messung
- * ueber eine Entscheidungsgrenze, markiert sie ein roter Punkt: Der
- * Empfaenger haette das falsche Symbol verstanden. Rechts zeigen die
- * Verteilungskurven die Ueberlappung der Pegel.
+ * Ein simulierter Kanal als kleines Oszilloskop, bewusst allgemein
+ * gehalten: Das Signal kann Licht, Spannung oder Schall sein. Der
+ * Besucher SENDET selbst ein Symbol (Klick auf die Spur, Zifferntasten,
+ * Pfeiltasten), und der Messstrom zeigt als geglaettete Kurve, wie die
+ * verrauschten Messungen um den gesendeten Pegel entstehen. Rutscht
+ * eine Messung ueber eine Entscheidungsgrenze, markiert sie ein roter
+ * Punkt: Der Empfaenger haette das falsche Symbol verstanden.
  *
- * Drei Regler, ein Zielkonflikt: Fensterlaenge glaettet (sigma ~
- * 1/sqrt(Fenster)) und kostet Rate; mehr Symbole tragen mehr Bits und
- * schrumpfen die Abstaende; die Signalstaerke streckt oder staucht den
- * nutzbaren Bereich. Leertaste pausiert. Das Rauschen ist simuliert;
- * die echten Zahlen liefert die eigene Strecke. Kein Framework, kein
- * Build. */
+ * Zwei Regler, ein Zielkonflikt: Fensterlaenge glaettet (sigma ~
+ * 1/sqrt(Fenster)) und kostet Rate; jedes zusaetzliche Symbol traegt
+ * mehr Bits und schrumpft die Abstaende. Dazu ein Stoersignal-Knopf:
+ * eine unerwartete Drift (etwa fremdes Umgebungslicht), die die Kurve
+ * fuer ein paar Sekunden verschiebt. Leertaste pausiert. Das Rauschen
+ * ist simuliert; die echten Zahlen liefert die eigene Strecke. Kein
+ * Framework, kein Build. */
 
 "use strict";
 
 // --- Kanalmodell ------------------------------------------------------------
-const SCALE = 1024;                 // Helligkeitsskala des Sensors
-const FLOOR = 70;                   // Grundpegel (Raumlicht)
+const SCALE = 1024;                 // Signalskala, Einheiten sind willkuerlich
+const FLOOR = 70;                   // Grundpegel des Kanals
+const TOP = SCALE - 40;             // hoechster Sendepegel
 const SIGMA_BASE = 260;             // sigma = SIGMA_BASE / sqrt(Fenster in ms)
 const HISTORY = 400;                // Fenster fuer die Fehlerquote
 
@@ -30,15 +32,13 @@ const DIGITS = "0123456789ABCDEF";
 const state = {
   k: 4,
   windowMs: 50,
-  rangePct: 100,
   current: 1,                       // das gerade gesendete Symbol
   paused: false,
   results: [],                      // true = richtig erkannt
 };
 
 function levels() {
-  const top = FLOOR + (SCALE - FLOOR - 40) * (state.rangePct / 100);
-  const step = (top - FLOOR) / (state.k - 1);
+  const step = (TOP - FLOOR) / (state.k - 1);
   return Array.from({ length: state.k }, (_, i) => FLOOR + i * step);
 }
 
@@ -52,11 +52,32 @@ function gaussian() {               // Box-Muller
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+/* Stoersignal: eine Drift, die schnell ansteigt, ein paar Sekunden
+ * wirkt und abklingt, mit leichtem Wabern, wie fremdes Licht, das ins
+ * Fenster faellt. */
+const disturbance = { amp: 0, sign: 1, startedAt: 0 };
+
+function disturb() {
+  disturbance.amp = 140 + Math.random() * 160;
+  disturbance.sign = Math.random() < 0.5 ? -1 : 1;
+  disturbance.startedAt = performance.now();
+}
+
+function disturbanceOffset(now) {
+  if (!disturbance.amp) return 0;
+  const t = (now - disturbance.startedAt) / 1000;
+  if (t > 6) { disturbance.amp = 0; return 0; }
+  const envelope = Math.min(t / 0.4, 1) * Math.exp(-t / 2.2);
+  const wobble = 1 + 0.25 * Math.sin(t * 5.3);
+  return disturbance.sign * disturbance.amp * envelope * wobble;
+}
+
 /* Eine Messung des gerade gesendeten Symbols, Zuordnung zum
  * naechstgelegenen Pegel. */
-function measure() {
+function measure(now) {
   const lv = levels();
-  const measured = lv[state.current] + gaussian() * sigma();
+  const measured = lv[state.current] + gaussian() * sigma()
+                 + disturbanceOffset(now);
   let best = 0;
   lv.forEach((level, i) => {
     if (Math.abs(measured - level) < Math.abs(measured - lv[best])) best = i;
@@ -86,7 +107,7 @@ function resize() {
   canvas.width = W * ratio;
   canvas.height = H * ratio;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  streamW = W * 0.74;
+  streamW = W - PAD;
   samples.length = 0;
   cursor = PAD_LEFT;
 }
@@ -99,7 +120,6 @@ let cursor = PAD_LEFT;
 
 function drawFrame() {
   const lv = levels();
-  const s = sigma();
   ctx.clearRect(0, 0, W, H);
 
   // Entscheidungsgrenzen (Mitten zwischen den Pegeln), gestrichelt
@@ -163,22 +183,11 @@ function drawFrame() {
   ctx.lineTo(cursor, H - PAD);
   ctx.stroke();
 
-  // Rechts: die Verteilungskurven, Ueberlappung wird sichtbar
-  const x0 = streamW + 14;
-  const amp = W - x0 - PAD;
-  ctx.lineWidth = 1.5;
-  lv.forEach((level, i) => {
-    ctx.strokeStyle = i === state.current ? PALETTE.blue : PALETTE.grayDark;
-    ctx.beginPath();
-    for (let dv = -3.2 * s; dv <= 3.2 * s; dv += Math.max(1, s / 12)) {
-      const y = yOf(level + dv);
-      const x = x0 + amp * Math.exp(-(dv * dv) / (2 * s * s));
-      if (dv === -3.2 * s) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  });
-
-  if (state.paused) {
+  if (disturbance.amp) {
+    ctx.fillStyle = PALETTE.red;
+    ctx.font = "13px Arial";
+    ctx.fillText("disturbance active", PAD_LEFT + 8, PAD + 12);
+  } else if (state.paused) {
     ctx.fillStyle = PALETTE.gray;
     ctx.font = "14px Arial";
     ctx.fillText("paused — press space", PAD_LEFT + 8, PAD + 12);
@@ -193,7 +202,7 @@ let last = 0;
 function tick(ts) {
   if (!state.paused && ts - last > 25) {
     last = ts;
-    const { measured, ok } = measure();
+    const { measured, ok } = measure(ts);
     cursor += 3;
     if (cursor > streamW - 4) {
       cursor = PAD_LEFT;
@@ -221,21 +230,19 @@ function updateStats() {
   errEl.className = "value " + (errPct < 0.5 ? "good" : errPct > 5 ? "bad" : "");
 
   el("st-rate").textContent = `${rate.toFixed(0)}/s`;
-  el("st-bits").textContent = bits;
+  el("st-bits").textContent = bits.toFixed(2).replace(/\.?0+$/, "");
   el("st-bits-note").textContent = `log2(${state.k})`;
   el("st-tp").textContent = `${(rate * bits).toFixed(0)} bit/s`;
 }
 
 function readKnobs() {
   if (state.current >= state.k) state.current = state.k - 1;
+  const name = SYSTEM_NAMES[state.k] || `base ${state.k}`;
   el("rd-k").textContent =
-    `${SYSTEM_NAMES[state.k]}: symbols 0 to ${DIGITS[state.k - 1]}`;
+    `${state.k} symbols (${name}): 0 to ${DIGITS[state.k - 1]}`;
   el("rd-win").textContent =
-    `${state.windowMs} ms  (scatter ±${sigma().toFixed(0)} counts)`;
-  el("rd-range").textContent = `${state.rangePct} % of the scale`;
+    `${state.windowMs} ms  (scatter ±${sigma().toFixed(0)} units)`;
   el("st-sending").textContent = DIGITS[state.current];
-  document.querySelectorAll("#seg-k button").forEach((b) =>
-    b.setAttribute("aria-pressed", Number(b.dataset.k) === state.k));
   state.results.length = 0;         // neue Bedingungen, neue Quote
 }
 
@@ -259,23 +266,19 @@ canvas.addEventListener("pointerdown", (ev) => {
   selectSymbol(best);
 });
 
-document.querySelectorAll("#seg-k button").forEach((b) =>
-  b.addEventListener("click", () => {
-    state.k = Number(b.dataset.k);
-    readKnobs();
-  }));
-el("in-win").addEventListener("input", (ev) => {
-  state.windowMs = Number(ev.target.value);
+el("in-k").addEventListener("input", (ev) => {
+  state.k = Number(ev.target.value);
   readKnobs();
 });
-el("in-range").addEventListener("input", (ev) => {
-  state.rangePct = Number(ev.target.value);
+el("in-win").addEventListener("input", (ev) => {
+  state.windowMs = Number(ev.target.value);
   readKnobs();
 });
 el("btn-pause").addEventListener("click", () => {
   state.paused = !state.paused;
   el("btn-pause").textContent = state.paused ? "run" : "pause";
 });
+el("btn-disturb").addEventListener("click", disturb);
 
 window.addEventListener("keydown", (ev) => {
   // Auf Buttons und Reglern gelten deren eigene Tastenbelegungen
@@ -284,6 +287,8 @@ window.addEventListener("keydown", (ev) => {
   if (ev.key === " ") {
     state.paused = !state.paused;
     el("btn-pause").textContent = state.paused ? "run" : "pause";
+  } else if (ev.key === "d") {
+    disturb();
   } else if (digit >= 0 && digit < state.k) {
     selectSymbol(digit);
   } else if (ev.key === "ArrowUp") {
