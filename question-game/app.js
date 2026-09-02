@@ -134,25 +134,32 @@ function bookkeep(before) {
 
 // --- Modal ------------------------------------------------------------------
 /* Beide Rechnungen beziehen sich auf den AKTUELLEN Rest der Kandidaten,
- * nicht auf die 16 vom Start. Gerade deshalb addieren sich die Bits am
- * Ende exakt zu log2(16) = 4: log2(16/8) + log2(8/5) + log2(5/1) ist
- * ein Teleskop, die Zwischenstaende kuerzen sich heraus. */
+ * nicht auf die 16 vom Start, und folgen der Schreibweise des Moduls:
+ * I = H1 - H2 mit H = log2(Kandidaten). Weil das H2 dieser Frage das H1
+ * der naechsten ist, addieren sich die Bits als Teleskopsumme am Ende
+ * exakt zu log2(16) = 4. */
 function showModal(sentence, answer, bits, expected, before, after, yes) {
   const no = before - yes;
   el("mod-q").textContent = sentence;
   el("mod-a").textContent = answer ? "yes" : "no";
   el("modal").querySelector(".modal-card").className =
     "modal-card " + (answer ? "yes" : "no");
+  // Schreibweise wie im Modul: I = H1 - H2 (Unsicherheit vorher/nachher)
+  const h1 = log2(before);
+  const h2 = log2(after);
   el("mod-bits").textContent = `${bits.toFixed(2)} bits`;
   el("mod-bits-calc").textContent =
-    `${before} faces left, the answer keeps ${after}: ` +
-    `log₂(${before}/${after}) = ${bits.toFixed(2)}`;
+    `H₁ = log₂(${before}) = ${h1.toFixed(2)} · ` +
+    `H₂ = log₂(${after}) = ${h2.toFixed(2)} · ` +
+    `I = H₁ − H₂ = ${bits.toFixed(2)}`;
   el("mod-exp").textContent = `${expected.toFixed(2)} bits`;
+  const eh2 = h1 - expected;
   el("mod-exp-calc").textContent = (yes === 0 || no === 0)
-    ? `all ${before} would answer the same way — nothing to learn`
-    : `${yes} would say yes, ${no} no: ` +
-      `${yes}/${before}·log₂(${before}/${yes}) + ` +
-      `${no}/${before}·log₂(${before}/${no}) = ${expected.toFixed(2)}`;
+    ? `all ${before} would answer the same way — H₂ = H₁, so E[I] = 0`
+    : `${yes} would say yes, ${no} no · ` +
+      `E[H₂] = ${yes}/${before}·log₂(${yes}) + ` +
+      `${no}/${before}·log₂(${no}) = ${eh2.toFixed(2)} · ` +
+      `E[I] = H₁ − E[H₂] = ${expected.toFixed(2)}`;
   el("modal").classList.add("show");
 }
 
