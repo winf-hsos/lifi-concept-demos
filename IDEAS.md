@@ -11,6 +11,8 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 ## Bestand
 
+**Question Game** (Symbole und Information, live): „Wer ist es?" als Informationsmessgerät. 16 KI-generierte Gesichter, sechs Merkmalfragen mit live angezeigten Ja/Nein-Splits, jede Antwort schrumpft die Kandidatenmenge und wird in Bits verbucht (log2 vorher/nachher); Rateklicks zählen als Frage. Ergebnis: Fragenzahl, Bits gesamt, Bits je Frage gegen die Halbierungsstrategie.
+
 **Byte Switchboard** (Zahlensysteme, live): acht Bits, Stellenwerte, Summenzeile, Binär, Dezimal, Hex, ASCII. Verlinkt von Deck 10, Folie 14.
 
 **Distinguishability Lab** (Signal und Rauschen, live): verrauschter Kanal als Oszilloskop-Sweep, Alphabet und Messfenster als Regler, Störknopf, Zeitlupe, Einzelmessung per Taste, Fehlerquote und Durchsatz live.
