@@ -44,10 +44,15 @@ const state = {
  * spaeter umgestellter Markenabstand aendert Vergangenes nicht. */
 const slots = [];                // Farbindex je Schlitz (oder MARKER)
 let sinceMarker = 0;             // Datenschlitze seit der letzten Marke
+let pendingMarker = false;       // von Hand angeforderte Marke (einmalig)
 
 function ensureSlots(upto) {
   while (slots.length <= upto) {
-    if (state.markerEvery > 0 && sinceMarker >= state.markerEvery) {
+    if (pendingMarker) {
+      pendingMarker = false;
+      slots.push(MARKER);
+      sinceMarker = 0;
+    } else if (state.markerEvery > 0 && sinceMarker >= state.markerEvery) {
       slots.push(MARKER);
       sinceMarker = 0;
     } else {
@@ -289,6 +294,7 @@ function reset() {
   lastOffset = 0;
   slots.length = 0;
   sinceMarker = 0;
+  pendingMarker = false;
   dots.length = 0;
   recv.length = 0;
   results.length = 0;
@@ -323,6 +329,10 @@ function stepOnce() {
   prune();
 }
 el("btn-step").addEventListener("click", stepOnce);
+
+/* Marke von Hand: der naechste noch nicht gesendete Schlitz wird zur
+ * Sync-Marke, unabhaengig vom eingestellten Abstand. */
+el("btn-marker").addEventListener("click", () => { pendingMarker = true; });
 el("btn-reset").addEventListener("click", reset);
 
 document.addEventListener("keydown", (ev) => {
@@ -341,6 +351,8 @@ document.addEventListener("keydown", (ev) => {
     readKnobs();
   } else if (ev.key === "m") {
     stepOnce();
+  } else if (ev.key === "s") {
+    pendingMarker = true;
   } else if (ev.key === "r") {
     reset();
   }
