@@ -1,18 +1,23 @@
 /* drift simulator — abtastung und synchronisation.
  *
- * Der Sender legt eine Nachricht Zeichen fuer Zeichen in feste
- * Zeitschlitze. Der Empfaenger tastet in der Mitte jedes Schlitzes ab,
- * glaubt er — denn seine Uhr geht um einen einstellbaren Prozentsatz
- * falsch. Der Versatz waechst mit jedem Symbol, die Abtastpunkte
- * wandern sichtbar aus den Schlitzen, und das Empfangsprotokoll kippt
- * in Zeichensalat: Symbole werden doppelt gelesen oder uebersprungen.
+ * Der Sender legt eine zufaellige Farbfolge Symbol fuer Symbol in feste
+ * Zeitschlitze, wie die LED des LiFi-Geraets. Der Empfaenger tastet in
+ * der Mitte jedes Schlitzes ab, glaubt er — denn seine Uhr geht um
+ * einen einstellbaren Prozentsatz falsch. Der Versatz waechst mit jedem
+ * Symbol, die Abtastpunkte wandern sichtbar aus den Schlitzen, und die
+ * Empfangszeile kippt gegen die Sendezeile: Farben werden doppelt
+ * gelesen oder uebersprungen.
+ *
+ * Die Farben sind nur unterscheidbare Symbole und tragen KEINE
+ * Bedeutung (keine Bit-Zuordnung): Welche Farbe wofuer steht,
+ * entscheidet spaeter jedes Team selbst.
  *
  * Der Schalter fuer die wiederkehrende Marke zeigt den Ausweg: Alle n
  * Symbole opfert der Sender einen Schlitz fuer eine Marke, an der sich
- * der Empfaenger neu ausrichtet. Der Versatz wird zum Saegezahn, die
- * Marke kostet sichtbar Rate. WIE der Empfaenger die Marke im Signal
- * erkennt, bleibt hier ausgeklammert; die Demo zeigt nur, was das
- * Neuausrichten bewirkt.
+ * der Empfaenger neu ausrichtet. Der Versatz springt auf null zurueck,
+ * die Marke kostet sichtbar Rate. WIE der Empfaenger die Marke im
+ * Signal erkennt, bleibt hier ausgeklammert; die Demo zeigt nur, was
+ * das Neuausrichten bewirkt.
  *
  * Anzeige als Sweep wie im distinguishability lab: Der Schreibkopf
  * laeuft von links nach rechts, nichts scrollt, am Rand beginnt eine
@@ -22,10 +27,11 @@
 
 // --- Modell -----------------------------------------------------------------
 const T = 100;                   // ms je Zeitschlitz (Senderuhr, fix)
-const MSG = "HELLO WORLD ";      // die Nachricht, endlos wiederholt
-const MARKER = "◆";         // Markenzeichen im Schlitz
+const SYMBOL_COLORS =            // vier unterscheidbare Sendefarben
+  ["#009ee3", "#ffd23f", "#4ade80", "#b06cf0"];
+const MARKER = -1;               // Markenschlitz (kein Datensymbol)
 const HISTORY = 100;             // Lesungen fuer die Fehlerquote
-const TRANSCRIPT = 64;           // Laenge der Protokollzeilen
+const TRANSCRIPT = 48;           // Laenge der Protokollzeilen
 
 const state = {
   err: 0.02,                     // Uhrenfehler des Empfaengers (Anteil)
@@ -36,8 +42,7 @@ const state = {
 
 /* Schlitze entstehen der Reihe nach und bleiben, wie sie sind; ein
  * spaeter umgestellter Markenabstand aendert Vergangenes nicht. */
-const slots = [];                // Zeichen je Schlitz (oder MARKER)
-let dataCount = 0;               // wie viele Datenschlitze existieren
+const slots = [];                // Farbindex je Schlitz (oder MARKER)
 let sinceMarker = 0;             // Datenschlitze seit der letzten Marke
 
 function ensureSlots(upto) {
@@ -46,8 +51,7 @@ function ensureSlots(upto) {
       slots.push(MARKER);
       sinceMarker = 0;
     } else {
-      slots.push(MSG[dataCount % MSG.length]);
-      dataCount += 1;
+      slots.push(Math.floor(Math.random() * SYMBOL_COLORS.length));
       sinceMarker += 1;
     }
   }
@@ -58,8 +62,9 @@ let simTime = 0;
 let sweepStart = 0;              // Beginn der aktuellen Bildschirmseite
 let nextTick = 0.5 * T;          // naechster Abtastzeitpunkt des Empfaengers
 let expectedSlot = 0;            // welchen Schlitz die Lesung treffen SOLL
-const dots = [];                 // { t, offset, ok, sync }  Abtastpunkte
-const recv = [];                 // { ch, ok } gelesene Zeichen
+let lastOffset = 0;              // aktueller Versatz in Schlitzen
+const dots = [];                 // { t, ci, ok, sync }  Abtastpunkte
+const recv = [];                 // { ci, ok } gelesene Symbole
 const results = [];              // true = richtiger Schlitz getroffen
 
 function step(dtMs) {
@@ -68,17 +73,18 @@ function step(dtMs) {
   while (nextTick <= end) {
     const t = nextTick;
     const slot = Math.floor(t / T);
-    const ch = slots[slot];
-    const offset = (t - (expectedSlot + 0.5) * T) / T;
-    if (ch === MARKER) {
+    const ci = slots[slot];
+    lastOffset = (t - (expectedSlot + 0.5) * T) / T;
+    if (ci === MARKER) {
       // Neu ausrichten: der naechste Tick sitzt wieder exakt mittig
-      dots.push({ t, offset, ok: true, sync: true });
+      dots.push({ t, ci, ok: true, sync: true });
       expectedSlot = slot + 1;
       nextTick = (slot + 1.5) * T;
+      lastOffset = 0;
     } else {
       const ok = slot === expectedSlot;
-      dots.push({ t, offset, ok, sync: false });
-      recv.push({ ch, ok });
+      dots.push({ t, ci, ok, sync: false });
+      recv.push({ ci, ok });
       if (recv.length > TRANSCRIPT) recv.shift();
       results.push(ok);
       if (results.length > HISTORY) results.shift();
@@ -95,8 +101,6 @@ function step(dtMs) {
 const PALETTE = {
   white: "#ffffff", grayLight: "#b6bec6", gray: "#7d868f",
   grayDark: "#4a5259", blue: "#009ee3", red: "#ff4d6d",
-  band: "rgba(255, 255, 255, 0.045)",
-  blueBand: "rgba(0, 158, 227, 0.16)",
 };
 
 const canvas = document.getElementById("lab");
@@ -105,10 +109,8 @@ let W = 0, H = 0, streamW = 0;
 const PAD = 14;
 const PAD_LEFT = 14;
 const SLOT_PX = 38;              // Breite eines Zeitschlitzes im Bild
-const SB0 = 40, SBH = 56;        // Senderband: oben, Hoehe
-const RY = 152;                  // Zeile der Abtastpunkte
-const OG0 = 214;                 // Versatzgraph: oben
-const OG_SPAN = 1.5;             // Graph zeigt Versatz von -1.5 bis +1.5
+const SB0 = 40, SBH = 88;        // Senderband: oben, Hoehe
+const RY = 196;                  // Zeile der Abtastpunkte
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -122,11 +124,6 @@ function resize() {
 window.addEventListener("resize", resize);
 
 const xOf = (t) => PAD_LEFT + (t / T - sweepStart) * SLOT_PX;
-const yOffset = (off) => {
-  const h = H - PAD - OG0;
-  const clamped = Math.max(-OG_SPAN, Math.min(OG_SPAN, off));
-  return OG0 + h / 2 - (clamped / OG_SPAN) * (h / 2);
-};
 
 /* Der Sweep: Ist der Schreibkopf rechts angekommen, beginnt eine neue
  * Bildschirmseite; nichts scrollt. */
@@ -146,87 +143,60 @@ function drawFrame() {
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
   ctx.fillStyle = PALETTE.gray;
-  ctx.fillText("sender: one symbol per time slot", PAD_LEFT, SB0 - 8);
-  ctx.fillText("receiver: sampling points (red = wrong slot)", PAD_LEFT, RY - 14);
-  ctx.fillText("how far the sampling point is off (in slots)", PAD_LEFT, OG0 - 8);
+  ctx.fillText("sender: one colour per time slot", PAD_LEFT, SB0 - 8);
+  ctx.fillText("receiver: sampling points (red ring = wrong slot)", PAD_LEFT, RY - 16);
 
-  // Senderband: Schlitze samt Zeichen, so weit der Kopf gekommen ist
+  // Senderband: Farbschlitze, so weit der Kopf gekommen ist
   const lastSlot = Math.floor(simTime / T);
-  ctx.font = "16px 'Roboto Mono', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
   for (let k = sweepStart; k <= lastSlot; k++) {
     const x0 = xOf(k * T);
     const w = Math.min(SLOT_PX, headX - x0);
     if (w <= 0 || x0 > streamW) continue;
-    const marker = slots[k] === MARKER;
-    if (marker) {
-      ctx.fillStyle = PALETTE.blueBand;
+    const ci = slots[k];
+    if (ci === MARKER) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.10)";
       ctx.fillRect(x0, SB0, w, SBH);
-    } else if (k % 2 === 0) {
-      ctx.fillStyle = PALETTE.band;
+      if ((k + 1) * T <= simTime) {
+        ctx.fillStyle = PALETTE.white;
+        ctx.font = "15px 'Roboto Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("◆", x0 + SLOT_PX / 2, SB0 + SBH / 2);
+      }
+    } else {
+      ctx.fillStyle = SYMBOL_COLORS[ci];
       ctx.fillRect(x0, SB0, w, SBH);
     }
-    ctx.strokeStyle = PALETTE.grayDark;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
     ctx.strokeRect(x0, SB0, Math.min(SLOT_PX, streamW - x0), SBH);
-    if ((k + 1) * T <= simTime) {
-      ctx.fillStyle = marker ? PALETTE.blue : PALETTE.grayLight;
-      ctx.fillText(slots[k], x0 + SLOT_PX / 2, SB0 + SBH / 2);
-    }
   }
 
-  // Abtastpunkte: Nadel bis ins Senderband, Punkt auf der Empfaengerzeile
+  // Abtastpunkte: Nadel bis ins Senderband, Punkt in der gelesenen Farbe
   dots.forEach((d) => {
     const x = xOf(d.t);
     if (x < PAD_LEFT || x > streamW) return;
-    const color = d.sync ? PALETTE.blue : (d.ok ? PALETTE.white : PALETTE.red);
-    ctx.strokeStyle = color;
+    const fill = d.sync ? PALETTE.white
+               : d.ci === MARKER ? PALETTE.grayLight
+               : SYMBOL_COLORS[d.ci];
+    ctx.strokeStyle = PALETTE.grayLight;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, SB0 + SBH);
-    ctx.lineTo(x, RY - 5);
+    ctx.lineTo(x, RY - 6);
     ctx.stroke();
-    ctx.fillStyle = color;
+    ctx.fillStyle = fill;
     ctx.beginPath();
-    ctx.arc(x, RY, 4, 0, 2 * Math.PI);
+    ctx.arc(x, RY, 5, 0, 2 * Math.PI);
     ctx.fill();
+    if (!d.ok && !d.sync) {
+      ctx.strokeStyle = PALETTE.red;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, RY, 8, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
   });
-
-  // Versatzgraph: Null- und Halbschlitzlinien, dann der Verlauf
-  ctx.strokeStyle = PALETTE.grayDark;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(PAD_LEFT, yOffset(0));
-  ctx.lineTo(streamW, yOffset(0));
-  ctx.stroke();
-  ctx.setLineDash([4, 5]);
-  [-0.5, 0.5].forEach((v) => {
-    ctx.beginPath();
-    ctx.moveTo(PAD_LEFT, yOffset(v));
-    ctx.lineTo(streamW, yOffset(v));
-    ctx.stroke();
-  });
-  ctx.setLineDash([]);
-  ctx.font = "11px Arial";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = PALETTE.gray;
-  ctx.fillText("+half a slot", PAD_LEFT + 4, yOffset(0.5) - 8);
-  ctx.fillText("-half a slot", PAD_LEFT + 4, yOffset(-0.5) + 9);
-
-  ctx.strokeStyle = PALETTE.blue;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  let started = false;
-  dots.forEach((d) => {
-    const x = xOf(d.t);
-    if (x < PAD_LEFT || x > streamW) return;
-    const y = yOffset(d.offset);
-    if (!started) { ctx.moveTo(x, y); started = true; }
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
 
   // Schreibkopf
   ctx.strokeStyle = PALETTE.grayDark;
@@ -269,6 +239,10 @@ function updateStats() {
   el("st-clock-note").textContent =
     pct === 0 ? "perfectly in step" : pct > 0 ? "runs slow: samples too late"
                                              : "runs fast: samples too early";
+  const off = el("st-off");
+  off.textContent =
+    (lastOffset >= 0 ? "+" : "") + lastOffset.toFixed(2) + " slots";
+  off.className = "value" + (Math.abs(lastOffset) >= 0.5 ? " bad" : "");
   el("st-half").textContent =
     state.err === 0 ? "never" : `${Math.round(0.5 / Math.abs(state.err))} sym`;
   const errCount = results.filter((r) => !r).length;
@@ -285,11 +259,14 @@ function renderLines() {
   const done = Math.floor(simTime / T);
   const sent = [];
   for (let i = Math.max(0, done - TRANSCRIPT * 2); i < done; i++) {
-    if (slots[i] && slots[i] !== MARKER) sent.push(slots[i]);
+    if (slots[i] !== undefined && slots[i] !== MARKER) sent.push(slots[i]);
   }
-  el("st-sent").textContent = sent.slice(-TRANSCRIPT).join("");
+  el("st-sent").innerHTML = sent.slice(-TRANSCRIPT)
+    .map((ci) => `<span class="sym" style="background:${SYMBOL_COLORS[ci]}"></span>`)
+    .join("");
   el("st-recv").innerHTML = recv
-    .map((r) => r.ok ? r.ch : `<span class="err">${r.ch}</span>`)
+    .map((r) => `<span class="sym${r.ok ? "" : " err"}" ` +
+                `style="background:${SYMBOL_COLORS[r.ci]}"></span>`)
     .join("");
 }
 
@@ -309,8 +286,8 @@ function reset() {
   sweepStart = 0;
   nextTick = 0.5 * T;
   expectedSlot = 0;
+  lastOffset = 0;
   slots.length = 0;
-  dataCount = 0;
   sinceMarker = 0;
   dots.length = 0;
   recv.length = 0;

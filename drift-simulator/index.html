@@ -10,7 +10,7 @@
   <style>
     .lab-canvas {
       width: 100%;
-      height: 360px;
+      height: 260px;
       display: block;
       border: 1px solid var(--gray-dark);
       border-radius: 8px;
@@ -32,8 +32,14 @@
        ist rtl, damit bei Ueberlauf das JUENGSTE Ende sichtbar bleibt. */
     .line .payload { direction: ltr; unicode-bidi: isolate; }
     .line .line-label { color: var(--gray); font-size: 13px; font-family: var(--font); display: inline-block; width: 74px; }
-    .line .err { color: var(--red); }
-    .line.sent .payload { color: var(--gray); }
+    .line .sym {
+      display: inline-block;
+      width: 13px; height: 13px;
+      border-radius: 3px;
+      margin-right: 3px;
+      vertical-align: middle;
+    }
+    .line .sym.err { box-shadow: 0 0 0 2px var(--red); }
 
     .stats {
       display: grid;
@@ -79,7 +85,7 @@
 
   <main>
     <h1>drift simulator</h1>
-    <p class="subtitle">two clocks, one message: watch the receiver&rsquo;s sampling points wander out of the sender&rsquo;s time slots.</p>
+    <p class="subtitle">two clocks, one colour sequence: watch the receiver&rsquo;s sampling points wander out of the sender&rsquo;s time slots.</p>
 
     <canvas class="lab-canvas" id="lab" aria-hidden="true"></canvas>
     <div class="lines">
@@ -93,6 +99,11 @@
         <div class="label">receiver clock</div>
         <div class="value" id="st-clock">&ndash;</div>
         <div class="note" id="st-clock-note"></div>
+      </div>
+      <div class="stat">
+        <div class="label">currently off by</div>
+        <div class="value" id="st-off">&ndash;</div>
+        <div class="note">half a slot means wrong reads</div>
       </div>
       <div class="stat">
         <div class="label">half a slot off after</div>
@@ -145,6 +156,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
