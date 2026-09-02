@@ -18,6 +18,19 @@
     }
     .sim-note { color: var(--gray-dark); font-size: 12px; text-align: right; }
 
+    .recv {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--gray-light);
+      margin: 8px 0 2px;
+      overflow: hidden;
+      white-space: nowrap;
+      direction: rtl;            /* die juengsten Symbole bleiben sichtbar */
+      text-align: left;
+    }
+    .recv .recv-label { color: var(--gray); font-size: 13px; font-family: var(--font); }
+    .recv .err { color: var(--red); }
+
     .stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -65,6 +78,7 @@
     <p class="subtitle">you are the sender: pick a symbol, watch the noisy readings arrive, and see when the receiver gets it wrong.</p>
 
     <canvas class="lab-canvas" id="lab" aria-hidden="true"></canvas>
+    <div class="recv"><span class="recv-label">received:</span> <span id="st-recv"></span></div>
     <div class="sim-note">simulated noise &mdash; the signal could be light, voltage or sound. the real numbers come from measuring your own link.</div>
 
     <div class="stats">
@@ -103,7 +117,7 @@
       </div>
       <div class="knob">
         <div class="label">measurement window (integration time)</div>
-        <input type="range" id="in-win" min="5" max="200" step="5" value="50" aria-label="measurement window in milliseconds">
+        <input type="range" id="in-win" min="10" max="250" step="10" value="50" aria-label="measurement window in milliseconds">
         <div class="reading" id="rd-win"></div>
       </div>
     </div>

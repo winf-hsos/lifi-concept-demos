@@ -1,29 +1,35 @@
 /* distinguishability lab — signal und rauschen.
  *
- * Ein simulierter Kanal als kleines Oszilloskop, bewusst allgemein
- * gehalten: Das Signal kann Licht, Spannung oder Schall sein. Der
- * Besucher SENDET selbst ein Symbol (Klick auf die Spur, Zifferntasten,
- * Pfeiltasten), und der Messstrom zeigt als geglaettete Kurve, wie die
- * verrauschten Messungen um den gesendeten Pegel entstehen. Rutscht
- * eine Messung ueber eine Entscheidungsgrenze, markiert sie ein roter
- * Punkt: Der Empfaenger haette das falsche Symbol verstanden.
+ * Ein simulierter Kanal als Oszilloskop mit zwei Ebenen:
  *
- * Zwei Regler, ein Zielkonflikt: Fensterlaenge glaettet (sigma ~
- * 1/sqrt(Fenster)) und kostet Rate; jedes zusaetzliche Symbol traegt
- * mehr Bits und schrumpft die Abstaende. Dazu ein Stoersignal-Knopf:
- * eine unerwartete Drift (etwa fremdes Umgebungslicht), die die Kurve
- * fuer ein paar Sekunden verschiebt. Leertaste pausiert. Das Rauschen
- * ist simuliert; die echten Zahlen liefert die eigene Strecke. Kein
- * Framework, kein Build. */
+ *   1. Das ANALOGE Signal laeuft als duenne, rauschende Kurve
+ *      kontinuierlich durch. Sein Rauschen ist eine Eigenschaft des
+ *      Kanals und haengt NICHT vom Messfenster ab.
+ *   2. Das Messfenster liegt als Band auf der Zeitachse (abwechselnd
+ *      getoent). Am Ende jedes Bands mittelt der Empfaenger alle
+ *      Rohwerte darin zu EINER Messung: dem weissen Balken. Laengere
+ *      Fenster machen die Baender breiter und die Messungen ruhiger,
+ *      liefern aber weniger davon je Sekunde. Das erkannte Symbol
+ *      steht ueber jedem Band und laeuft unter dem Bild als
+ *      Empfangsprotokoll mit; Fehler sind rot.
+ *
+ * Der Besucher sendet selbst (Klick auf die Spur, Zifferntasten,
+ * Pfeiltasten); ein Symbolwechsel mitten im Band ergibt ehrlich eine
+ * Mischmessung. Der Stoerknopf legt eine abklingende Drift aufs
+ * Signal, wie fremdes Licht oder eine Netzstoerung. Leertaste
+ * pausiert. Signal kann Licht, Spannung oder Schall sein; die echten
+ * Zahlen liefert die eigene Strecke. Kein Framework, kein Build. */
 
 "use strict";
 
 // --- Kanalmodell ------------------------------------------------------------
-const SCALE = 1024;                 // Signalskala, Einheiten sind willkuerlich
-const FLOOR = 70;                   // Grundpegel des Kanals
-const TOP = SCALE - 40;             // hoechster Sendepegel
-const SIGMA_BASE = 260;             // sigma = SIGMA_BASE / sqrt(Fenster in ms)
-const HISTORY = 400;                // Fenster fuer die Fehlerquote
+const SCALE = 1024;              // Signalskala, Einheiten sind willkuerlich
+const FLOOR = 70;                // unterster Sendepegel
+const TOP = SCALE - 40;          // oberster Sendepegel
+const RAW_DT = 5;                // ms zwischen zwei Rohwerten des Kanals
+const SIGMA_RAW = 116;           // Streuung eines einzelnen Rohwerts
+const HISTORY = 400;             // Messungen fuer die Fehlerquote
+const TRANSCRIPT = 60;           // Laenge des Empfangsprotokolls
 
 const SYSTEM_NAMES = { 2: "binary", 4: "base 4", 8: "octal",
                        16: "hexadecimal" };
@@ -32,9 +38,10 @@ const DIGITS = "0123456789ABCDEF";
 const state = {
   k: 4,
   windowMs: 50,
-  current: 1,                       // das gerade gesendete Symbol
+  current: 1,                    // das gerade gesendete Symbol
   paused: false,
-  results: [],                      // true = richtig erkannt
+  results: [],                   // true = richtig erkannt
+  received: [],                  // Empfangsprotokoll { digit, ok }
 };
 
 function levels() {
@@ -42,63 +49,96 @@ function levels() {
   return Array.from({ length: state.k }, (_, i) => FLOOR + i * step);
 }
 
-function sigma() {
-  return SIGMA_BASE / Math.sqrt(state.windowMs);
+function nearest(value) {
+  const lv = levels();
+  let best = 0;
+  lv.forEach((level, i) => {
+    if (Math.abs(value - level) < Math.abs(value - lv[best])) best = i;
+  });
+  return best;
 }
 
-function gaussian() {               // Box-Muller
+function gaussian() {            // Box-Muller
   const u = 1 - Math.random();
   const v = Math.random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-/* Stoersignal: eine Drift, die schnell ansteigt, ein paar Sekunden
- * wirkt und abklingt, mit leichtem Wabern, wie fremdes Licht, das ins
- * Fenster faellt. */
+/* Stoersignal: schnell ansteigende, wabernd abklingende Drift. */
 const disturbance = { amp: 0, sign: 1, startedAt: 0 };
 
 function disturb() {
   disturbance.amp = 140 + Math.random() * 160;
   disturbance.sign = Math.random() < 0.5 ? -1 : 1;
-  disturbance.startedAt = performance.now();
+  disturbance.startedAt = simTime;
 }
 
-function disturbanceOffset(now) {
+function disturbanceOffset() {
   if (!disturbance.amp) return 0;
-  const t = (now - disturbance.startedAt) / 1000;
+  const t = (simTime - disturbance.startedAt) / 1000;
   if (t > 6) { disturbance.amp = 0; return 0; }
   const envelope = Math.min(t / 0.4, 1) * Math.exp(-t / 2.2);
   const wobble = 1 + 0.25 * Math.sin(t * 5.3);
   return disturbance.sign * disturbance.amp * envelope * wobble;
 }
 
-/* Eine Messung des gerade gesendeten Symbols, Zuordnung zum
- * naechstgelegenen Pegel. */
-function measure(now) {
-  const lv = levels();
-  const measured = lv[state.current] + gaussian() * sigma()
-                 + disturbanceOffset(now);
-  let best = 0;
-  lv.forEach((level, i) => {
-    if (Math.abs(measured - level) < Math.abs(measured - lv[best])) best = i;
-  });
-  const ok = best === state.current;
-  state.results.push(ok);
-  if (state.results.length > HISTORY) state.results.shift();
-  return { measured, ok };
+// --- Simulation -------------------------------------------------------------
+/* Die Simulationszeit laeuft in Echtzeit; alle RAW_DT ms entsteht ein
+ * Rohwert, an jeder Fenstergrenze eine Messung. */
+let simTime = 0;
+const raws = [];                 // { t, v }   rohes Analogsignal
+const marks = [];                // { t0, t1, avg, digit, ok }  Messungen
+let win = null;                  // laufendes Fenster { t0, sum, n, tally }
+
+function newWindow(t0) {
+  win = { t0, sum: 0, n: 0, tally: new Array(16).fill(0) };
+}
+
+function step(dtMs) {
+  let t = simTime;
+  const end = simTime + dtMs;
+  while (t + RAW_DT <= end) {
+    t += RAW_DT;
+    simTime = t;
+    const v = levels()[state.current] + gaussian() * SIGMA_RAW
+            + disturbanceOffset();
+    raws.push({ t, v });
+    win.sum += v;
+    win.n += 1;
+    win.tally[state.current] += 1;
+
+    if (t >= win.t0 + state.windowMs && win.n > 0) {
+      const avg = win.sum / win.n;
+      const digit = nearest(avg);
+      const sent = win.tally.indexOf(Math.max(...win.tally));
+      const ok = digit === sent;
+      marks.push({ t0: win.t0, t1: t, avg, digit, ok });
+      state.results.push(ok);
+      if (state.results.length > HISTORY) state.results.shift();
+      state.received.push({ digit, ok });
+      if (state.received.length > TRANSCRIPT) state.received.shift();
+      newWindow(t);
+      updateStats();
+      renderTranscript();
+    }
+  }
+  simTime = end;
 }
 
 // --- Zeichnung --------------------------------------------------------------
 const PALETTE = {
   white: "#ffffff", grayLight: "#b6bec6", gray: "#7d868f",
   grayDark: "#4a5259", blue: "#009ee3", red: "#ff4d6d",
+  band: "rgba(255, 255, 255, 0.045)",
 };
 
 const canvas = document.getElementById("lab");
 const ctx = canvas.getContext("2d");
 let W = 0, H = 0, streamW = 0;
 const PAD = 14;
-const PAD_LEFT = 44;                // Platz fuer die Spur-Beschriftung
+const PAD_TOP = 30;              // Platz fuer die Symbolzeile
+const PAD_LEFT = 44;             // Platz fuer die Spur-Beschriftung
+const PX_PER_MS = 0.35;          // Zeitachse: Band = Fensterlaenge
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
@@ -108,21 +148,37 @@ function resize() {
   canvas.height = H * ratio;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   streamW = W - PAD;
-  samples.length = 0;
-  cursor = PAD_LEFT;
 }
 window.addEventListener("resize", resize);
 
-const yOf = (value) => H - PAD - (value / SCALE) * (H - 2 * PAD);
+const yOf = (value) =>
+  H - PAD - (value / SCALE) * (H - PAD - PAD_TOP);
+const xOf = (t) => streamW - (simTime - t) * PX_PER_MS;
 
-const samples = [];                 // { x, y, ok }
-let cursor = PAD_LEFT;
+function prune() {
+  const horizon = simTime - (streamW - PAD_LEFT) / PX_PER_MS - 500;
+  while (raws.length && raws[0].t < horizon) raws.shift();
+  while (marks.length && marks[0].t1 < horizon) marks.shift();
+}
 
 function drawFrame() {
   const lv = levels();
   ctx.clearRect(0, 0, W, H);
 
-  // Entscheidungsgrenzen (Mitten zwischen den Pegeln), gestrichelt
+  // Fensterbaender, abwechselnd getoent; das laufende Band zuletzt
+  const alle = marks.concat([{ t0: win.t0, t1: simTime, laufend: true }]);
+  alle.forEach((m, idx) => {
+    if (idx % 2 === 0 || m.laufend) {
+      const x0 = Math.max(PAD_LEFT, xOf(m.t0));
+      const x1 = Math.min(streamW, xOf(m.t1));
+      if (x1 > x0) {
+        ctx.fillStyle = PALETTE.band;
+        ctx.fillRect(x0, PAD_TOP, x1 - x0, H - PAD - PAD_TOP);
+      }
+    }
+  });
+
+  // Entscheidungsgrenzen, gestrichelt
   ctx.setLineDash([4, 5]);
   ctx.strokeStyle = PALETTE.grayDark;
   ctx.lineWidth = 1;
@@ -151,65 +207,62 @@ function drawFrame() {
     ctx.fillText(DIGITS[i], 16, y);
   });
 
-  // Messkurve: geglaettete Linie durch die Messpunkte (Oszilloskop-Optik)
-  if (samples.length > 1) {
-    ctx.strokeStyle = PALETTE.grayLight;
-    ctx.lineWidth = 1.5;
+  // Das analoge Signal: duenne, rauschende Kurve
+  if (raws.length > 1) {
+    ctx.strokeStyle = PALETTE.gray;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(samples[0].x, samples[0].y);
-    for (let i = 1; i < samples.length - 1; i++) {
-      const mx = (samples[i].x + samples[i + 1].x) / 2;
-      const my = (samples[i].y + samples[i + 1].y) / 2;
-      ctx.quadraticCurveTo(samples[i].x, samples[i].y, mx, my);
-    }
+    let begonnen = false;
+    raws.forEach((r) => {
+      const x = xOf(r.t);
+      if (x < PAD_LEFT) return;
+      const y = yOf(r.v);
+      if (!begonnen) { ctx.moveTo(x, y); begonnen = true; }
+      else ctx.lineTo(x, y);
+    });
     ctx.stroke();
   }
 
-  // Fehlmessungen als rote Punkte auf der Kurve
-  ctx.fillStyle = PALETTE.red;
-  samples.forEach((p) => {
-    if (!p.ok) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI);
-      ctx.fill();
+  // Die Messungen: ein Balken je Band auf Hoehe des Mittelwerts,
+  // darueber das erkannte Symbol
+  ctx.font = "12px 'Roboto Mono', monospace";
+  marks.forEach((m) => {
+    const x0 = Math.max(PAD_LEFT, xOf(m.t0));
+    const x1 = Math.min(streamW, xOf(m.t1));
+    if (x1 <= x0) return;
+    const y = yOf(m.avg);
+    ctx.strokeStyle = m.ok ? PALETTE.white : PALETTE.red;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.stroke();
+    if (x1 - x0 >= 13) {
+      ctx.fillStyle = m.ok ? PALETTE.grayLight : PALETTE.red;
+      ctx.fillText(DIGITS[m.digit], (x0 + x1) / 2 - 4, PAD_TOP - 12);
     }
   });
-
-  // Schreibkopf
-  ctx.strokeStyle = PALETTE.grayDark;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cursor, PAD);
-  ctx.lineTo(cursor, H - PAD);
-  ctx.stroke();
 
   if (disturbance.amp) {
     ctx.fillStyle = PALETTE.red;
     ctx.font = "13px Arial";
-    ctx.fillText("disturbance active", PAD_LEFT + 8, PAD + 12);
+    ctx.fillText("disturbance active", PAD_LEFT + 8, PAD_TOP + 12);
   } else if (state.paused) {
     ctx.fillStyle = PALETTE.gray;
     ctx.font = "14px Arial";
-    ctx.fillText("paused — press space", PAD_LEFT + 8, PAD + 12);
+    ctx.fillText("paused — press space", PAD_LEFT + 8, PAD_TOP + 12);
   }
 }
 
-// --- Simulationstakt --------------------------------------------------------
-/* Sichtbar laufen immer ~40 Messungen je Sekunde durchs Bild; die ECHTE
- * Rate steht in der Statistik. So bleibt die Anzeige bei jedem Fenster
- * fluessig, ohne die Rechnung zu verfaelschen. */
-let last = 0;
+// --- Takt -------------------------------------------------------------------
+let lastTs = 0;
 function tick(ts) {
-  if (!state.paused && ts - last > 25) {
-    last = ts;
-    const { measured, ok } = measure(ts);
-    cursor += 3;
-    if (cursor > streamW - 4) {
-      cursor = PAD_LEFT;
-      samples.length = 0;           // neue Bildschirmseite
-    }
-    samples.push({ x: cursor, y: yOf(measured), ok });
-    updateStats();
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min(ts - lastTs, 100);   // Tab-Wechsel nicht nachholen
+  lastTs = ts;
+  if (!state.paused) {
+    step(dt);
+    prune();
   }
   drawFrame();
   requestAnimationFrame(tick);
@@ -235,15 +288,25 @@ function updateStats() {
   el("st-tp").textContent = `${(rate * bits).toFixed(0)} bit/s`;
 }
 
+function renderTranscript() {
+  el("st-recv").innerHTML = state.received
+    .map((r) => r.ok ? DIGITS[r.digit]
+                     : `<span class="err">${DIGITS[r.digit]}</span>`)
+    .join("");
+}
+
 function readKnobs() {
   if (state.current >= state.k) state.current = state.k - 1;
   const name = SYSTEM_NAMES[state.k] || `base ${state.k}`;
   el("rd-k").textContent =
     `${state.k} symbols (${name}): 0 to ${DIGITS[state.k - 1]}`;
+  const meas = SIGMA_RAW / Math.sqrt(state.windowMs / RAW_DT);
   el("rd-win").textContent =
-    `${state.windowMs} ms  (scatter ±${sigma().toFixed(0)} units)`;
+    `${state.windowMs} ms: averages ${Math.round(state.windowMs / RAW_DT)} ` +
+    `raw readings (scatter ±${meas.toFixed(0)} units)`;
   el("st-sending").textContent = DIGITS[state.current];
-  state.results.length = 0;         // neue Bedingungen, neue Quote
+  state.results.length = 0;        // neue Bedingungen, neue Quote
+  newWindow(simTime);
 }
 
 function selectSymbol(i) {
@@ -302,5 +365,6 @@ window.addEventListener("keydown", (ev) => {
 });
 
 resize();
+newWindow(0);
 readKnobs();
 requestAnimationFrame(tick);
