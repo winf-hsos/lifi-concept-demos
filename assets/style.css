@@ -1,0 +1,115 @@
+/* LiFi concept demos — gemeinsames Look & Feel.
+ *
+ * Die Designwerte entsprechen der Folien-Designsprache des LiFi-Projekts
+ * (style.toml im Hauptprojekt): schwarzer Grund, acht Farben, Arial,
+ * Roboto Mono fuer alles Zaehlbare, durchgehende Kleinschreibung.
+ * Farbe ist Bedeutung, nicht Dekoration: Blau verweist, Gelb merkt an,
+ * Rot ist der sparsame Hingucker. */
+
+:root {
+  --bg: #000000;
+  --white: #ffffff;
+  --gray-light: #b6bec6;
+  --gray: #7d868f;
+  --gray-dark: #4a5259;
+  --blue: #009ee3;
+  --green: #4ade80;
+  --yellow: #ffd23f;
+  --red: #ff4d6d;
+  --font: Arial, "Helvetica Neue", sans-serif;
+  --mono: "Roboto Mono", "Consolas", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font);
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code, .mono { font-family: var(--mono); }
+
+/* Seitenrahmen: schmale Kopfzeile, Inhalt mittig, Fusszeile */
+.demo-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 22px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+main {
+  flex: 1;
+  width: min(960px, 100% - 32px);
+  margin: 0 auto;
+  padding: 8px 0 32px;
+}
+
+h1 {
+  font-size: 40px;
+  font-weight: normal;
+  margin: 12px 0 2px;
+}
+
+.subtitle { color: var(--gray); margin: 0 0 28px; font-size: 16px; }
+
+.demo-footer {
+  padding: 14px 22px 18px;
+  font-size: 13px;
+  color: var(--gray);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Uebersichtsseite */
+.concept-block { margin: 26px 0; }
+.concept-block h2 {
+  font-size: 16px;
+  font-weight: normal;
+  color: var(--gray-light);
+  border-bottom: 1px solid var(--gray-dark);
+  padding-bottom: 6px;
+}
+
+.demo-card {
+  display: block;
+  border: 1px solid var(--gray-dark);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  color: inherit;
+}
+.demo-card:hover { border-color: var(--blue); text-decoration: none; }
+.demo-card .name { font-size: 20px; }
+.demo-card .desc { color: var(--gray); font-size: 14px; margin-top: 4px; }
+.demo-soon { color: var(--gray-dark); font-size: 14px; margin: 12px 2px; }
+
+/* Bedienelemente: bewusst zurueckhaltend, die Sache steht im Zentrum */
+button.ctrl {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--gray-light);
+  background: none;
+  border: 1px solid var(--gray-dark);
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+button.ctrl:hover { border-color: var(--gray-light); color: var(--white); }
+button.ctrl:active { transform: translateY(1px); }
+
+.hint { color: var(--gray-dark); font-size: 12px; }
