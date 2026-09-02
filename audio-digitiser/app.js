@@ -2,7 +2,8 @@
  *
  * Dieselben zwei Schnitte wie beim Bild, jetzt fuers Ohr. Ein im Code
  * erzeugter "analoger" Klang (48.000 Werte je Sekunde als
- * Stellvertreter fuer stufenlos) wird digitalisiert:
+ * Stellvertreter fuer stufenlos) oder eine KI-generierte
+ * Sprachaufnahme wird digitalisiert:
  *
  *   Abtastrate:  wie oft je Sekunde wird gemessen? (48 kHz bis 1 kHz)
  *   Bit-Tiefe:   wie viele Lautstaerkestufen je Messung? (16 bis 1 bit)
@@ -112,6 +113,46 @@ function makeChirp() {
 }
 
 const SOUNDS = { melody: makeMelody(), bass: makeBass(), chirp: makeChirp() };
+
+/* Die Stimme kommt als 48-kHz-WAV aus dem Asset-Bestand (KI-generiert,
+ * OpenAI TTS). Der Mini-Parser liest den data-Chunk als 16-bit-PCM;
+ * eine Bibliothek braucht es dafuer nicht. */
+function parseWav(buf) {
+  const dv = new DataView(buf);
+  let off = 12;
+  while (off + 8 <= dv.byteLength) {
+    const id = String.fromCharCode(dv.getUint8(off), dv.getUint8(off + 1),
+                                   dv.getUint8(off + 2), dv.getUint8(off + 3));
+    const size = dv.getUint32(off + 4, true);
+    if (id === "data") {
+      const n = Math.floor(size / 2);
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) out[i] = dv.getInt16(off + 8 + i * 2, true) / 32768;
+      return out;
+    }
+    off += 8 + size + (size % 2);
+  }
+  return null;
+}
+
+fetch("../assets/audio/voice.wav")
+  .then((r) => r.arrayBuffer())
+  .then((buf) => {
+    const d = parseWav(buf);
+    const v = new Float32Array(LEN);
+    v.set(d.subarray(0, Math.min(d.length, LEN)));
+    SOUNDS.voice = v;
+    // Anzeigefenster auf die lauteste Stelle legen (einen Vokal)
+    const n = Math.floor(WINDOW_S * SR);
+    let best = 0, bestE = -1;
+    for (let s = 0; s + n < LEN; s += 240) {
+      let e = 0;
+      for (let i = 0; i < n; i += 8) e += v[s + i] * v[s + i];
+      if (e > bestE) { bestE = e; best = s; }
+    }
+    WINDOW_AT.voice = best / SR;
+    el("btn-voice").disabled = false;
+  });
 
 // --- Digitalisieren ----------------------------------------------------------
 function quantize(v, bits) {

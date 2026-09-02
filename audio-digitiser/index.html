@@ -82,6 +82,7 @@
       <button class="ctrl" data-m="melody" aria-pressed="true">melody</button>
       <button class="ctrl" data-m="bass" aria-pressed="false">bass groove</button>
       <button class="ctrl" data-m="chirp" aria-pressed="false">bird chirps</button>
+      <button class="ctrl" data-m="voice" aria-pressed="false" id="btn-voice" disabled>a voice</button>
     </div>
 
     <canvas class="wave-canvas" id="wave" aria-hidden="true"></canvas>
@@ -116,7 +117,7 @@
     </div>
 
     <div class="takeaway">sampling slices time, bit depth slices loudness. what you throw away, you can hear.</div>
-    <div class="sim-note">digitised the naive way, without the smoothing filters real converters use &mdash; so you hear the cuts at their rawest.</div>
+    <div class="sim-note">digitised the naive way, without the smoothing filters real converters use &mdash; so you hear the cuts at their rawest. voice: ai-generated (openai tts-1).</div>
   </main>
 
   <div class="demo-footer">
@@ -125,6 +126,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
