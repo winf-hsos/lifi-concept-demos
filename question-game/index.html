@@ -130,9 +130,12 @@
     .modal-card .mod-a {
       font-family: var(--mono);
       font-size: 34px;
-      color: var(--yellow);
       margin-bottom: 14px;
     }
+    .modal-card.yes { border-color: var(--green); }
+    .modal-card.yes .mod-a { color: var(--green); }
+    .modal-card.no { border-color: var(--red); }
+    .modal-card.no .mod-a { color: var(--red); }
     .modal-card .mod-row { color: var(--gray-light); font-size: 14px; margin-bottom: 2px; }
     .modal-card .mod-calc {
       font-family: var(--mono);
@@ -232,6 +235,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

@@ -141,6 +141,8 @@ function showModal(sentence, answer, bits, expected, before, after, yes) {
   const no = before - yes;
   el("mod-q").textContent = sentence;
   el("mod-a").textContent = answer ? "yes" : "no";
+  el("modal").querySelector(".modal-card").className =
+    "modal-card " + (answer ? "yes" : "no");
   el("mod-bits").textContent = `${bits.toFixed(2)} bits`;
   el("mod-bits-calc").textContent =
     `${before} faces left, the answer keeps ${after}: ` +
