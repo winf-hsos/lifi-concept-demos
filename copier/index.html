@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the copier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .chains {
+      display: flex;
+      gap: clamp(16px, 4vw, 44px);
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin: 26px 0 10px;
+    }
+    .chain { text-align: center; }
+    .chain .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
+    .chain canvas {
+      width: min(256px, 84vw);
+      aspect-ratio: 1;
+      image-rendering: pixelated;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      background: #000;
+    }
+    .chain .readout {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--gray-light);
+      margin-top: 8px;
+      min-height: 20px;
+    }
+    .chain .readout .bad { color: var(--red); }
+    .chain .readout .good { color: var(--green); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px 24px;
+      margin: 18px 0 8px;
+    }
+    .stat .label { color: var(--gray); font-size: 13px; }
+    .stat .value { font-family: var(--mono); font-size: clamp(22px, 4vw, 32px); }
+    .stat .value.bad { color: var(--red); }
+    .stat .note { color: var(--gray-dark); font-size: 12px; }
+
+    .panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px 32px;
+      border-top: 1px solid var(--gray-dark);
+      padding-top: 18px;
+      margin-top: 8px;
+    }
+    .knob .label { color: var(--gray); font-size: 13px; margin-bottom: 6px; }
+    .knob .reading { font-family: var(--mono); color: var(--gray-light); font-size: 14px; margin-top: 2px; }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+
+    .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 20px; }
+    .controls .hint { width: 100%; text-align: center; }
+
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 24px 0 4px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the copier</h1>
+    <p class="subtitle">copy a picture again and again. both chains suffer the same noise &mdash; only one of them decides before passing it on.</p>
+
+    <div class="chains">
+      <div class="chain">
+        <div class="clabel">original</div>
+        <canvas id="cv-orig" width="128" height="128"></canvas>
+        <div class="readout">&nbsp;</div>
+      </div>
+      <div class="chain">
+        <div class="clabel">analog chain: copy the values as they are</div>
+        <canvas id="cv-analog" width="128" height="128"></canvas>
+        <div class="readout" id="rd-analog"></div>
+      </div>
+      <div class="chain">
+        <div class="clabel">digital chain: 4 agreed levels, decide, then copy</div>
+        <canvas id="cv-digital" width="128" height="128"></canvas>
+        <div class="readout" id="rd-digital"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">generation</div>
+        <div class="value" id="st-gen">0</div>
+        <div class="note">copies of copies</div>
+      </div>
+      <div class="stat">
+        <div class="label">noise per copy</div>
+        <div class="value" id="st-noise">&ndash;</div>
+        <div class="note">added to every pixel, every copy</div>
+      </div>
+      <div class="stat">
+        <div class="label">gap between levels</div>
+        <div class="value">85</div>
+        <div class="note">4 levels on a 0&ndash;255 scale</div>
+      </div>
+      <div class="stat">
+        <div class="label">safety margin</div>
+        <div class="value" id="st-margin">&ndash;</div>
+        <div class="note">half the gap beats the noise?</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="knob">
+        <div class="label">noise per copy</div>
+        <input type="range" id="in-noise" min="2" max="60" step="1" value="8" aria-label="noise added per copy">
+        <div class="reading" id="rd-noise"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl" id="btn-copy">copy once</button>
+      <button class="ctrl" id="btn-copy10">copy &times;10</button>
+      <button class="ctrl" id="btn-copy100">copy &times;100</button>
+      <button class="ctrl" id="btn-reset">reset</button>
+      <span class="hint">keys: c copy once &middot; x copy &times;10 &middot; r reset</span>
+    </div>
+
+    <div class="takeaway">digitising costs a little, once. copying costs nothing &mdash; until the noise crosses half the gap.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/analog-and-digital.html">analog und digital</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>
