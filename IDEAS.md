@@ -13,6 +13,10 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **Byte Switchboard** (Zahlensysteme, live): acht Bits, Stellenwerte, Summenzeile, Binär, Dezimal, Hex, ASCII. Verlinkt von Deck 10, Folie 14.
 
+**Distinguishability Lab** (Signal und Rauschen, live): verrauschter Kanal als Oszilloskop-Sweep, Alphabet und Messfenster als Regler, Störknopf, Zeitlupe, Einzelmessung per Taste, Fehlerquote und Durchsatz live.
+
+**Drift Simulator** (Abtastung und Synchronisation, live): Sender legt „HELLO WORLD" in Zeitschlitze, die Empfängeruhr geht einstellbar falsch; Abtastpunkte wandern sichtbar, der Versatzgraph zeigt die halbe-Schlitz-Grenze, eine zuschaltbare Sync-Marke macht den Sägezahn und kostet sichtbar Rate.
+
 ## Die Kandidaten, nach Kurskonzepten
 
 ### Signal und Rauschen: „Unterscheidbarkeits-Labor"
