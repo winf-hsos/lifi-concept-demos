@@ -6,8 +6,9 @@
  *
  *   Aufloesung:  wie viele Bildpunkte? (256x256 bis hinunter
  *                zu einem einzigen Pixel)
- *   Farbtiefe:   wie viele Farben je Punkt? 1 bit s/w, 8 bit grau,
- *                8/16/24 bit Farbe.
+ *   Farbtiefe:   wie viele Farben je Punkt? 1 bit s/w, 2 bit grau
+ *                (Game Boy), 8 bit grau, 8/16/24 bit Farbe. Jede Stufe
+ *                traegt ihren historischen Ort als Hinweis.
  *
  * Darunter steht die Rechnung offen ausgeschrieben: Pixel mal Bits je
  * Pixel gleich Dateigroesse, und daneben, wie lange dieses Bild ueber
@@ -21,15 +22,22 @@
 const FULL = 256;
 const RESOLUTIONS = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 const DEPTHS = [
-  { key: "bw",   label: "b/w",        bits: 1,  desc: "2 colours: black or white" },
-  { key: "grey", label: "greyscale",  bits: 8,  desc: "256 shades of grey" },
-  { key: "c8",   label: "8-bit",      bits: 8,  desc: "256 colours (3+3+2 bits)" },
-  { key: "c16",  label: "16-bit",     bits: 16, desc: "65,536 colours (5+6+5 bits)" },
-  { key: "c24",  label: "24-bit",     bits: 24, desc: "16.7 million colours (8+8+8 bits)" },
+  { key: "bw",    label: "b/w",       bits: 1,
+    desc: "2 colours — fax machines, e-paper price tags" },
+  { key: "grey2", label: "4 greys",   bits: 2,
+    desc: "4 shades of grey — the original game boy display" },
+  { key: "grey",  label: "greyscale", bits: 8,
+    desc: "256 shades of grey — scanners, x-ray images" },
+  { key: "c8",    label: "8-bit",     bits: 8,
+    desc: "256 colours (3+3+2) — the gif and vga era" },
+  { key: "c16",   label: "16-bit",    bits: 16,
+    desc: "65,536 colours (5+6+5) — 1990s desktops, gadget displays" },
+  { key: "c24",   label: "24-bit",    bits: 24,
+    desc: "16.7 million colours (8+8+8) — today's standard" },
 ];
 const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 
-const state = { resIdx: 5, depthIdx: 4 };
+const state = { resIdx: 5, depthIdx: 5 };
 const el = (id) => document.getElementById(id);
 
 // --- Fotomotive --------------------------------------------------------------
@@ -91,6 +99,10 @@ function digitise() {
     if (depth.key === "bw") {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       d[i] = d[i + 1] = d[i + 2] = lum >= 118 ? 255 : 0;
+    } else if (depth.key === "grey2") {
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      const q = Math.round(lum / 255 * 3) * 85;
+      d[i] = d[i + 1] = d[i + 2] = q;
     } else if (depth.key === "grey") {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       d[i] = d[i + 1] = d[i + 2] = Math.round(lum);
@@ -169,7 +181,7 @@ DEPTHS.forEach((depth, i) => {
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
-  if (ev.key >= "1" && ev.key <= "5") {
+  if (ev.key >= "1" && ev.key <= "6") {
     seg.querySelectorAll("button")[Number(ev.key) - 1].click();
   } else if (ev.key === "ArrowLeft" && state.resIdx > 0) {
     state.resIdx -= 1;
