@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the audio digitiser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .motifs { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 18px; }
+    .motifs .mlabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .motifs button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+
+    .wave-canvas {
+      width: 100%;
+      height: 300px;
+      display: block;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      margin: 18px 0 6px;
+    }
+    .legend {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      color: var(--gray);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .legend .swatch { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+
+    .players { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 10px 0 4px; }
+
+    .calc {
+      font-family: var(--mono);
+      text-align: center;
+      color: var(--gray-light);
+      font-size: 15px;
+      margin: 14px 0 4px;
+      line-height: 1.7;
+    }
+    .calc .big { color: var(--white); font-size: 19px; }
+    .calc .slow { color: var(--yellow); }
+
+    .panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px 40px;
+      border-top: 1px solid var(--gray-dark);
+      padding-top: 18px;
+      margin-top: 14px;
+    }
+    .knob .label { color: var(--gray); font-size: 13px; margin-bottom: 6px; }
+    .knob .reading { font-family: var(--mono); color: var(--gray-light); font-size: 14px; margin-top: 4px; }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+    .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seg button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+
+    .sim-note { color: var(--gray-dark); font-size: 12px; text-align: right; margin-top: 6px; }
+
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 24px 0 4px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the audio digitiser</h1>
+    <p class="subtitle">the same two cuts, now for sound: pick a sampling rate and a bit depth, see the staircase &mdash; and hear it. a wav file is exactly this list of numbers.</p>
+
+    <div class="motifs" id="motifs" role="group" aria-label="choose a sound">
+      <span class="mlabel">sound:</span>
+      <button class="ctrl" data-m="melody" aria-pressed="true">melody</button>
+      <button class="ctrl" data-m="bass" aria-pressed="false">bass groove</button>
+      <button class="ctrl" data-m="chirp" aria-pressed="false">bird chirps</button>
+    </div>
+
+    <canvas class="wave-canvas" id="wave" aria-hidden="true"></canvas>
+    <div class="legend">
+      <span><span class="swatch" style="background: var(--gray-light);"></span>the analog wave</span>
+      <span><span class="swatch" style="background: var(--blue);"></span>your digital version (sampled and quantized)</span>
+    </div>
+
+    <div class="players">
+      <button class="ctrl" id="btn-orig">&#9654; play the analog original</button>
+      <button class="ctrl" id="btn-dig">&#9654; play your digital version</button>
+      <button class="ctrl" id="btn-stop">stop</button>
+    </div>
+
+    <div class="calc">
+      <div id="calc-line"></div>
+      <div class="big" id="calc-size"></div>
+      <div class="slow" id="calc-time"></div>
+    </div>
+
+    <div class="panel">
+      <div class="knob">
+        <div class="label">sampling rate (measurements per second)</div>
+        <input type="range" id="in-rate" min="0" max="7" step="1" value="7" aria-label="sampling rate">
+        <div class="reading" id="rd-rate"></div>
+      </div>
+      <div class="knob">
+        <div class="label">bit depth (levels per measurement)</div>
+        <div class="seg" id="seg-depth" role="group" aria-label="bit depth"></div>
+        <div class="reading" id="rd-depth"></div>
+      </div>
+    </div>
+
+    <div class="takeaway">sampling slices time, bit depth slices loudness. what you throw away, you can hear.</div>
+    <div class="sim-note">digitised the naive way, without the smoothing filters real converters use &mdash; so you hear the cuts at their rawest.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/analog-and-digital.html">analog und digital</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>

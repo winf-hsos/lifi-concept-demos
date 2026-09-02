@@ -17,6 +17,8 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **The Digitiser** (Analog und digital, live): analoges Foto (drei Motive, geteilt mit dem Copier) gegen seine Digitalisierung; Regler fuer Aufloesung (256x256 bis hinunter zu 1 Pixel) und Farbtiefe (1 bit s/w, 8 bit grau, 8/16/24 bit Farbe), darunter die offene Rechnung Pixel x Bits = Dateigroesse plus Uebertragungsdauer bei 30 bit/s ueber die Lichtstrecke.
 
+**The Audio Digitiser** (Analog und digital, live): dieselben zwei Schnitte fuers Ohr. Drei prozedural erzeugte Klaenge (Melodie, Bassfigur, Vogelzwitschern), Abtastrate 48 kHz bis 1 kHz und Bit-Tiefe 16 bis 1 bit; Treppenkurve ueber der glatten Welle, Abspielknoepfe fuer Original und Digitalfassung (Web Audio, keine Abhaengigkeit), Dateigroesse und Lichtstrecken-Dauer live. Bewusst naive Digitalisierung ohne Filter, ehrlich ausgewiesen.
+
 **Byte Switchboard** (Zahlensysteme, live): acht Bits, Stellenwerte, Summenzeile, Binär, Dezimal, Hex, ASCII. Verlinkt von Deck 10, Folie 14.
 
 **Distinguishability Lab** (Signal und Rauschen, live): verrauschter Kanal als Oszilloskop-Sweep, Alphabet und Messfenster als Regler, Störknopf, Zeitlupe, Einzelmessung per Taste, Fehlerquote und Durchsatz live.
