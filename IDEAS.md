@@ -15,7 +15,7 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **The Copier** (Analog und digital, live): eine Kopienwand. Jeder Druck auf "copy" haengt die naechste analoge Generation daneben (die Bilder schrumpfen, damit alles passt), Kopiersorgfalt in drei Worten statt Sigma; der Kontrastknopf "and as a file?" haengt die identische Dateikopie dazu. Ohne Obergrenze; drei Fotomotive (KI-generiert), geteilt mit dem Digitiser. Umgebaut am 03.09.2026 von der Zwei-Ketten-Fassung.
 
-**The Digitiser** (Analog und digital, live): analoges Foto (drei Motive, geteilt mit dem Copier) gegen seine Digitalisierung; Regler fuer Aufloesung (8x8 bis 256x256) und Farbtiefe (1 bit s/w, 8 bit grau, 8/16/24 bit Farbe), darunter die offene Rechnung Pixel x Bits = Dateigroesse plus Uebertragungsdauer bei 30 bit/s ueber die Lichtstrecke.
+**The Digitiser** (Analog und digital, live): analoges Foto (drei Motive, geteilt mit dem Copier) gegen seine Digitalisierung; Regler fuer Aufloesung (256x256 bis hinunter zu 1 Pixel) und Farbtiefe (1 bit s/w, 8 bit grau, 8/16/24 bit Farbe), darunter die offene Rechnung Pixel x Bits = Dateigroesse plus Uebertragungsdauer bei 30 bit/s ueber die Lichtstrecke.
 
 **Byte Switchboard** (Zahlensysteme, live): acht Bits, Stellenwerte, Summenzeile, Binär, Dezimal, Hex, ASCII. Verlinkt von Deck 10, Folie 14.
 
