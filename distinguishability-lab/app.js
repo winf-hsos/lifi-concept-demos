@@ -38,6 +38,7 @@ const DIGITS = "0123456789ABCDEF";
 const state = {
   k: 4,
   windowMs: 50,
+  speed: 0.35,                   // Zeitlupe: Anteil der Echtzeit
   current: 1,                    // das gerade gesendete Symbol
   paused: false,
   results: [],                   // true = richtig erkannt
@@ -275,7 +276,7 @@ function tick(ts) {
   const dt = Math.min(ts - lastTs, 100);   // Tab-Wechsel nicht nachholen
   lastTs = ts;
   if (!state.paused) {
-    step(dt);
+    step(dt * state.speed);      // Zeitlupe wirkt nur auf die Anzeige
     prune();
   }
   drawFrame();
@@ -314,10 +315,11 @@ function readKnobs() {
   const name = SYSTEM_NAMES[state.k] || `base ${state.k}`;
   el("rd-k").textContent =
     `${state.k} symbols (${name}): 0 to ${DIGITS[state.k - 1]}`;
-  const meas = SIGMA_RAW / Math.sqrt(state.windowMs / RAW_DT);
   el("rd-win").textContent =
-    `${state.windowMs} ms: averages ${Math.round(state.windowMs / RAW_DT)} ` +
-    `raw readings (scatter ±${meas.toFixed(0)} units)`;
+    `${state.windowMs} ms: averages ` +
+    `${Math.round(state.windowMs / RAW_DT)} raw readings`;
+  el("rd-speed").textContent =
+    `${Math.round(state.speed * 100)} % of real time`;
   el("st-sending").textContent = DIGITS[state.current];
   state.results.length = 0;        // neue Bedingungen, neue Quote
   newWindow(simTime);
@@ -349,6 +351,10 @@ el("in-k").addEventListener("input", (ev) => {
 });
 el("in-win").addEventListener("input", (ev) => {
   state.windowMs = Number(ev.target.value);
+  readKnobs();
+});
+el("in-speed").addEventListener("input", (ev) => {
+  state.speed = Number(ev.target.value) / 100;
   readKnobs();
 });
 el("btn-pause").addEventListener("click", () => {

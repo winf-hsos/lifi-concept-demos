@@ -120,8 +120,13 @@
         <div class="reading" id="rd-k"></div>
       </div>
       <div class="knob">
+        <div class="label">display speed</div>
+        <input type="range" id="in-speed" min="10" max="100" step="5" value="35" aria-label="display speed in percent of real time">
+        <div class="reading" id="rd-speed"></div>
+      </div>
+      <div class="knob">
         <div class="label">measurement window (integration time)</div>
-        <input type="range" id="in-win" min="10" max="250" step="10" value="50" aria-label="measurement window in milliseconds">
+        <input type="range" id="in-win" min="10" max="2000" step="10" value="50" aria-label="measurement window in milliseconds">
         <div class="reading" id="rd-win"></div>
       </div>
     </div>
