@@ -11,7 +11,7 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 ## Bestand
 
-**Question Game** (Symbole und Information, live): „Wer ist es?" als Informationsmessgerät. 16 KI-generierte Gesichter, sechs Merkmalfragen mit live angezeigten Ja/Nein-Splits, jede Antwort schrumpft die Kandidatenmenge und wird in Bits verbucht (log2 vorher/nachher); Rateklicks zählen als Frage. Ergebnis: Fragenzahl, Bits gesamt, Bits je Frage gegen die Halbierungsstrategie.
+**Question Game** (Symbole und Information, live): „Wer ist es?" als Informationsmessgerät. 16 KI-generierte Gesichter, neun Merkmalfragen (Splits bewusst verborgen, das Auszählen ist die Strategiearbeit); nach jeder Antwort rechnet ein Modal in Modulnotation vor: I = H₁ − H₂, samt Erwartungswert der Frage. Rateklicks zählen als Frage. Ergebnis: Fragenzahl, Bits gesamt, Bits je Frage gegen die Halbierungsstrategie.
 
 **The Copier** (Analog und digital, live): ein prozedurales Graustufenbild durch zwei Kopierketten mit identischem Rauschen; analog verschlammt es Generation um Generation, digital heilt die Schwellenentscheidung auf vier Stufen alles, bis das Rauschen die halbe Stufenluecke schlaegt. Ehrlich ausgewiesen: Digitalisierung kostet einmalig (Banding in Generation 0), gekippte Pixel bleiben fuer immer.
 
