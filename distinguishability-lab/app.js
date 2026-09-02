@@ -86,6 +86,7 @@ function disturbanceOffset() {
 /* Die Simulationszeit laeuft in Echtzeit; alle RAW_DT ms entsteht ein
  * Rohwert, an jeder Fenstergrenze eine Messung. */
 let simTime = 0;
+let sweepStart = 0;              // Beginn der aktuellen Bildschirmseite
 const raws = [];                 // { t, v }   rohes Analogsignal
 const marks = [];                // { t0, t1, avg, digit, ok }  Messungen
 let win = null;                  // laufendes Fenster { t0, sum, n, tally }
@@ -153,12 +154,16 @@ window.addEventListener("resize", resize);
 
 const yOf = (value) =>
   H - PAD - (value / SCALE) * (H - PAD - PAD_TOP);
-const xOf = (t) => streamW - (simTime - t) * PX_PER_MS;
+const xOf = (t) => PAD_LEFT + (t - sweepStart) * PX_PER_MS;
 
+/* Der Sweep: Ist der Schreibkopf rechts angekommen, beginnt eine neue
+ * Bildschirmseite; die alte Kurve verschwindet, nichts scrollt. */
 function prune() {
-  const horizon = simTime - (streamW - PAD_LEFT) / PX_PER_MS - 500;
-  while (raws.length && raws[0].t < horizon) raws.shift();
-  while (marks.length && marks[0].t1 < horizon) marks.shift();
+  if (xOf(simTime) > streamW - 4) {
+    sweepStart = simTime;
+    raws.length = 0;
+    marks.length = 0;
+  }
 }
 
 function drawFrame() {
@@ -242,6 +247,15 @@ function drawFrame() {
       ctx.fillText(DIGITS[m.digit], (x0 + x1) / 2 - 4, PAD_TOP - 12);
     }
   });
+
+  // Schreibkopf
+  const kopf = xOf(simTime);
+  ctx.strokeStyle = PALETTE.grayDark;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(kopf, PAD_TOP);
+  ctx.lineTo(kopf, H - PAD);
+  ctx.stroke();
 
   if (disturbance.amp) {
     ctx.fillStyle = PALETTE.red;
@@ -341,6 +355,19 @@ el("btn-pause").addEventListener("click", () => {
   state.paused = !state.paused;
   el("btn-pause").textContent = state.paused ? "run" : "pause";
 });
+
+/* Einzelschritt: haelt an und fuehrt genau ein Messfenster aus, vom
+ * Fensteranfang bis zur fertigen Messung. Gut zum Vorfuehren. */
+function stepOnce() {
+  if (!state.paused) {
+    state.paused = true;
+    el("btn-pause").textContent = "run";
+  }
+  const bis = win.t0 + state.windowMs - simTime;
+  step(Math.max(bis, RAW_DT));
+  prune();
+}
+el("btn-step").addEventListener("click", stepOnce);
 el("btn-disturb").addEventListener("click", disturb);
 
 window.addEventListener("keydown", (ev) => {
@@ -352,6 +379,8 @@ window.addEventListener("keydown", (ev) => {
     el("btn-pause").textContent = state.paused ? "run" : "pause";
   } else if (ev.key === "d") {
     disturb();
+  } else if (ev.key === "m") {
+    stepOnce();
   } else if (digit >= 0 && digit < state.k) {
     selectSymbol(digit);
   } else if (ev.key === "ArrowUp") {
