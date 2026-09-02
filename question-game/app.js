@@ -6,45 +6,59 @@
  * Kandidaten, und genau dieses Schrumpfen ist die Information:
  * bits = log2(vorher / nachher).
  *
- * Die Merkmale sind absichtlich UNGLEICH verteilt (Brille 8/16, Hut
- * 6/16, Bart 4/16, Locken 8/16, Ohrringe 5/16, Fliege 3/16): Wer die
- * Splits liest und immer nahe der Haelfte fragt, holt ~1 Bit je Frage
- * und ist in 4 Fragen fertig; wer schiefe Fragen stellt, braucht mehr.
- * Ein Rateklick auf ein Gesicht zaehlt ebenfalls als Frage — meistens
- * die schlechteste (Split 1 gegen 15), manchmal ein Glueckstreffer.
- * Beides zeigt die Bit-Rechnung ehrlich an.
+ * Die Ja/Nein-Verteilung der Merkmale wird bewusst NICHT angezeigt:
+ * Das Auszaehlen der Gesichter ist die Strategiearbeit, um die es
+ * geht. Nach jeder Antwort erklaert ein Modal die Frage im Klartext,
+ * die gewonnenen Bits und den Erwartungswert der Frage (die Entropie
+ * ihres Splits) — so sieht man, ob eine Frage gut GEPLANT war,
+ * unabhaengig davon, ob sie Glueck hatte. Ein Rateklick auf ein
+ * Gesicht zaehlt ebenfalls als Frage, meistens die schlechteste
+ * (1 gegen den Rest). Mia hat als Einzige rote Haare: Auf alle drei
+ * Haarfarbenfragen antwortet sie mit Nein — alles oder nichts.
  *
  * Kein Framework, kein Build. Gesichter: KI-generiert (gpt-image-2). */
 
 "use strict";
 
-// Attribute: [glasses, hat, beard, curly, earrings, bowtie]
+// Attribute: [glasses, hat, beard, curly, earrings, bowtie], hair: r/b/g/d
 const CHARS = [
-  { name: "mia",   a: [1, 1, 0, 1, 0, 0] },
-  { name: "omar",  a: [1, 0, 1, 0, 0, 0] },
-  { name: "lena",  a: [1, 0, 0, 1, 1, 0] },
-  { name: "ravi",  a: [1, 1, 0, 0, 0, 0] },
-  { name: "finn",  a: [1, 0, 1, 1, 0, 0] },
-  { name: "aisha", a: [1, 1, 0, 0, 1, 0] },
-  { name: "jonas", a: [1, 0, 0, 1, 0, 1] },
-  { name: "zoe",   a: [1, 0, 0, 0, 0, 0] },
-  { name: "ines",  a: [0, 1, 0, 1, 1, 0] },
-  { name: "malik", a: [0, 0, 1, 0, 0, 0] },
-  { name: "sofia", a: [0, 0, 0, 1, 0, 0] },
-  { name: "ben",   a: [0, 1, 0, 0, 0, 1] },
-  { name: "karim", a: [0, 0, 1, 1, 0, 0] },
-  { name: "yuki",  a: [0, 0, 0, 0, 1, 0] },
-  { name: "elif",  a: [0, 1, 0, 1, 0, 0] },
-  { name: "noah",  a: [0, 0, 0, 0, 1, 1] },
+  { name: "mia",   a: [1, 1, 0, 1, 0, 0], hair: "r" },
+  { name: "omar",  a: [1, 0, 1, 0, 0, 0], hair: "d" },
+  { name: "lena",  a: [1, 0, 0, 1, 1, 0], hair: "b" },
+  { name: "ravi",  a: [1, 1, 0, 0, 0, 0], hair: "d" },
+  { name: "finn",  a: [1, 0, 1, 1, 0, 0], hair: "b" },
+  { name: "aisha", a: [1, 1, 0, 0, 1, 0], hair: "d" },
+  { name: "jonas", a: [1, 0, 0, 1, 0, 1], hair: "g" },
+  { name: "zoe",   a: [1, 0, 0, 0, 0, 0], hair: "d" },
+  { name: "ines",  a: [0, 1, 0, 1, 1, 0], hair: "g" },
+  { name: "malik", a: [0, 0, 1, 0, 0, 0], hair: "d" },
+  { name: "sofia", a: [0, 0, 0, 1, 0, 0], hair: "d" },
+  { name: "ben",   a: [0, 1, 0, 0, 0, 1], hair: "d" },
+  { name: "karim", a: [0, 0, 1, 1, 0, 0], hair: "d" },
+  { name: "yuki",  a: [0, 0, 0, 0, 1, 0], hair: "d" },
+  { name: "elif",  a: [0, 1, 0, 1, 0, 0], hair: "d" },
+  { name: "noah",  a: [0, 0, 0, 0, 1, 1], hair: "d" },
 ];
 
 const QUESTIONS = [
-  { label: "glasses?" },
-  { label: "a hat?" },
-  { label: "a beard?" },
-  { label: "curly hair?" },
-  { label: "earrings?" },
-  { label: "a bow tie?" },
+  { label: "glasses?",     sentence: "does the person wear glasses?",
+    test: (ch) => ch.a[0] === 1 },
+  { label: "a hat?",       sentence: "does the person wear a hat?",
+    test: (ch) => ch.a[1] === 1 },
+  { label: "a beard?",     sentence: "does the person have a beard?",
+    test: (ch) => ch.a[2] === 1 },
+  { label: "curly hair?",  sentence: "does the person have curly hair?",
+    test: (ch) => ch.a[3] === 1 },
+  { label: "earrings?",    sentence: "does the person wear earrings?",
+    test: (ch) => ch.a[4] === 1 },
+  { label: "a bow tie?",   sentence: "does the person wear a bow tie?",
+    test: (ch) => ch.a[5] === 1 },
+  { label: "grey hair?",   sentence: "does the person have grey hair?",
+    test: (ch) => ch.hair === "g" },
+  { label: "blonde hair?", sentence: "does the person have blonde hair?",
+    test: (ch) => ch.hair === "b" },
+  { label: "dark hair?",   sentence: "does the person have dark hair?",
+    test: (ch) => ch.hair === "d" },
 ];
 
 const N = CHARS.length;
@@ -83,7 +97,7 @@ const qEls = QUESTIONS.map((q, qi) => {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "ctrl";
-  b.innerHTML = `<span>${q.label}</span><span class="split"></span>`;
+  b.textContent = q.label;
   b.addEventListener("click", () => ask(qi));
   qsEl.appendChild(b);
   return b;
@@ -94,14 +108,13 @@ function aliveCount() {
   return alive.filter(Boolean).length;
 }
 
-function splitOf(qi) {
-  let yes = 0, total = 0;
-  alive.forEach((a, i) => {
-    if (!a) return;
-    total += 1;
-    yes += CHARS[i].a[qi];
-  });
-  return { yes, no: total - yes };
+/* Erwartungswert einer Ja/Nein-Frage: die Entropie ihres Splits unter
+ * den verbliebenen Kandidaten. Halbiert die Frage, ist er 1 Bit;
+ * steht die Antwort praktisch fest, geht er gegen 0. */
+function expectedBits(yes, total) {
+  const p = yes / total;
+  if (p <= 0 || p >= 1) return 0;
+  return -(p * log2(p) + (1 - p) * log2(1 - p));
 }
 
 function addLog(html) {
@@ -119,16 +132,34 @@ function bookkeep(before) {
   return { after, bits };
 }
 
+// --- Modal ------------------------------------------------------------------
+function showModal(sentence, answer, bits, expected) {
+  el("mod-q").textContent = sentence;
+  el("mod-a").textContent = answer ? "yes" : "no";
+  el("mod-bits").textContent = `${bits.toFixed(2)} bits`;
+  el("mod-exp").textContent = `${expected.toFixed(2)} bits`;
+  el("modal").classList.add("show");
+}
+
+function hideModal() {
+  el("modal").classList.remove("show");
+}
+el("modal").addEventListener("click", hideModal);
+
+// --- Fragen und Raten -------------------------------------------------------
 function ask(qi) {
   if (over || asked[qi]) return;
   const before = aliveCount();
-  const answer = CHARS[secret].a[qi] === 1;
-  alive = alive.map((a, i) => a && (CHARS[i].a[qi] === 1) === answer);
+  const yes = CHARS.filter((ch, i) => alive[i] && QUESTIONS[qi].test(ch)).length;
+  const expected = expectedBits(yes, before);
+  const answer = QUESTIONS[qi].test(CHARS[secret]);
+  alive = alive.map((a, i) => a && QUESTIONS[qi].test(CHARS[i]) === answer);
   asked[qi] = true;
   const { after, bits } = bookkeep(before);
   addLog(`${QUESTIONS[qi].label} <b>${answer ? "yes" : "no"}</b> — ` +
          `${before} &rarr; ${after} · ` +
          `<span class="bits">${bits.toFixed(2)} bits</span>`);
+  showModal(QUESTIONS[qi].sentence, answer, bits, expected);
   finishIfDone();
   render();
 }
@@ -136,19 +167,18 @@ function ask(qi) {
 function guess(i) {
   if (over || !alive[i]) return;
   const before = aliveCount();
-  if (i === secret) {
+  const expected = expectedBits(1, before);
+  const answer = i === secret;
+  if (answer) {
     alive = alive.map((_, j) => j === secret);
-    const { bits } = bookkeep(before);
-    addLog(`guess: ${CHARS[i].name}? <b>yes!</b> — ${before} &rarr; 1 · ` +
-           `<span class="bits">${bits.toFixed(2)} bits</span>` +
-           (before > 2 ? ' <span class="weak">(lucky)</span>' : ""));
   } else {
     alive[i] = false;
-    const { after, bits } = bookkeep(before);
-    addLog(`guess: ${CHARS[i].name}? <b>no</b> — ${before} &rarr; ${after} · ` +
-           `<span class="bits">${bits.toFixed(2)} bits</span>` +
-           (before > 2 ? ' <span class="weak">(a 1-vs-rest question)</span>' : ""));
   }
+  const { after, bits } = bookkeep(before);
+  addLog(`is it ${CHARS[i].name}? <b>${answer ? "yes!" : "no"}</b> — ` +
+         `${before} &rarr; ${after} · ` +
+         `<span class="bits">${bits.toFixed(2)} bits</span>`);
+  showModal(`is the person ${CHARS[i].name}?`, answer, bits, expected);
   finishIfDone();
   render();
 }
@@ -172,11 +202,7 @@ function finishIfDone() {
 // --- Anzeige ----------------------------------------------------------------
 function render() {
   faceEls.forEach((b, i) => b.classList.toggle("out", !alive[i]));
-  qEls.forEach((b, qi) => {
-    const { yes, no } = splitOf(qi);
-    b.querySelector(".split").textContent = `${yes} / ${no}`;
-    b.disabled = over || asked[qi] || yes === 0 || no === 0;
-  });
+  qEls.forEach((b, qi) => { b.disabled = over || asked[qi]; });
   el("st-left").textContent = aliveCount();
   el("st-q").textContent = questions;
   el("st-bits").textContent = bitsTotal.toFixed(2);
@@ -194,6 +220,7 @@ function newGame() {
   over = false;
   el("log").innerHTML = "";
   el("result").classList.remove("show");
+  hideModal();
   faceEls.forEach((b) => b.classList.remove("secret"));
   render();
 }
@@ -201,9 +228,13 @@ function newGame() {
 el("btn-new").addEventListener("click", newGame);
 
 document.addEventListener("keydown", (ev) => {
+  if (el("modal").classList.contains("show")) {
+    hideModal();
+    return;
+  }
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
-  if (ev.key >= "1" && ev.key <= "6") ask(Number(ev.key) - 1);
+  if (ev.key >= "1" && ev.key <= "9") ask(Number(ev.key) - 1);
   else if (ev.key === "n") newGame();
 });
 

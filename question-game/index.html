@@ -55,13 +55,7 @@
     .side h2 { grid-column: 1 / -1; font-size: 15px; color: var(--gray); font-weight: normal; margin: 0; }
     @media (max-width: 720px) { .side { grid-template-columns: 1fr; } }
     .qs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .qs button.ctrl {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      width: 100%;
-    }
-    .qs button.ctrl .split { color: var(--gray); font-family: var(--mono); }
+    .qs button.ctrl { width: 100%; }
     .qs button.ctrl:disabled { opacity: 0.35; cursor: default; }
 
     .bitsbar { margin: 4px 0 14px; }
@@ -113,6 +107,36 @@
     .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; }
     .sim-note { color: var(--gray-dark); font-size: 12px; text-align: right; margin-top: 6px; }
 
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 10;
+      cursor: pointer;
+    }
+    .modal.show { display: flex; }
+    .modal-card {
+      background: #14171a;
+      border: 1px solid var(--blue);
+      border-radius: 10px;
+      padding: 22px 28px;
+      max-width: min(420px, 88vw);
+      text-align: center;
+    }
+    .modal-card .mod-q { color: var(--white); font-size: 18px; margin-bottom: 10px; }
+    .modal-card .mod-a {
+      font-family: var(--mono);
+      font-size: 34px;
+      color: var(--yellow);
+      margin-bottom: 14px;
+    }
+    .modal-card .mod-row { color: var(--gray-light); font-size: 14px; margin-bottom: 4px; }
+    .modal-card .mod-row b { font-family: var(--mono); color: var(--white); font-weight: normal; }
+    .modal-card .mod-hint { color: var(--gray-dark); font-size: 12px; margin-top: 12px; }
+
     .takeaway {
       color: var(--yellow);
       text-align: center;
@@ -134,7 +158,7 @@
     <div class="board">
       <div class="faces" id="faces" role="group" aria-label="sixteen candidate faces; click a face to guess it"></div>
       <div class="side">
-        <h2>ask about&hellip; (the numbers show the yes/no split of the remaining faces)</h2>
+        <h2>ask about&hellip; &mdash; or click a face to guess. count the faces before you ask: which question splits them best?</h2>
         <div class="side-left">
           <div class="qs" id="qs"></div>
         </div>
@@ -177,12 +201,22 @@
 
     <div class="controls">
       <button class="ctrl" id="btn-new">new game</button>
-      <span class="hint">keys: 1&ndash;6 ask &middot; n new game</span>
+      <span class="hint">keys: 1&ndash;9 ask &middot; n new game</span>
     </div>
     <div class="sim-note">faces: ai-generated (gpt-image-2)</div>
 
     <div class="takeaway">a question is worth the most when it splits what is left in half. that is exactly one bit.</div>
   </main>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mod-q">
+    <div class="modal-card">
+      <div class="mod-q" id="mod-q"></div>
+      <div class="mod-a" id="mod-a"></div>
+      <div class="mod-row">information gained: <b id="mod-bits"></b></div>
+      <div class="mod-row">expected value of this question: <b id="mod-exp"></b></div>
+      <div class="mod-hint">click anywhere to continue</div>
+    </div>
+  </div>
 
   <div class="demo-footer">
     <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/symbols-and-information.html">symbole und information</a></span>
@@ -190,6 +224,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
