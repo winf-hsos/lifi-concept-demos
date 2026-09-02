@@ -38,7 +38,8 @@ const RATE_HINTS = {
 };
 const DEPTHS = [
   { bits: 16, hint: "cd and wav standard" },
-  { bits: 8,  hint: "telephone, early samplers" },
+  { bits: 12, hint: "early digital samplers" },
+  { bits: 8,  hint: "the telephone (which cheats with smarter levels)" },
   { bits: 4,  hint: "early game consoles" },
   { bits: 2,  hint: "four loudness levels" },
   { bits: 1,  hint: "a switch: loud or quiet" },
@@ -112,7 +113,54 @@ function makeChirp() {
   return data;
 }
 
-const SOUNDS = { melody: makeMelody(), bass: makeBass(), chirp: makeChirp() };
+/* Ein kleines Bandstueck: Akkordflaeche, Basslauf, Kick und Hi-Hat.
+ * Die verrauschte Hi-Hat ist der beste Aliasing-Zeuge im Programm. */
+function makeBand() {
+  const data = new Float32Array(LEN);
+  const STEP = 0.3125;                       // acht Achtel auf 2,5 s
+  // Akkordflaeche (a-Moll), ganz durchgehalten
+  for (let i = 0; i < LEN; i++) {
+    const t = i / SR;
+    const env = Math.min(t / 0.4, 1) * Math.min((DUR - t) / 0.4, 1);
+    let v = 0;
+    [220, 261.63, 329.63].forEach((f) => {
+      v += Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(2 * Math.PI * 2 * f * t);
+    });
+    data[i] += 0.06 * env * v;
+  }
+  const bassline = [110, 110, 130.8, 110, 164.8, 130.8, 110, 98];
+  for (let s = 0; s < 8; s++) {
+    const base = Math.round(s * STEP * SR);
+    // Bass
+    for (let i = 0; i < 0.28 * SR; i++) {
+      const t = i / SR;
+      if (base + i >= LEN) break;
+      data[base + i] += 0.28 * envelope(t, 0.28) *
+        (Math.sin(2 * Math.PI * bassline[s] * t) +
+         0.3 * Math.sin(2 * Math.PI * 3 * bassline[s] * t));
+    }
+    // Kick auf 1 und 5
+    if (s % 4 === 0) {
+      for (let i = 0; i < 0.15 * SR; i++) {
+        const t = i / SR;
+        if (base + i >= LEN) break;
+        const f = 110 - 400 * t;             // schnell fallende Tonhoehe
+        data[base + i] += 0.5 * Math.exp(-18 * t) *
+          Math.sin(2 * Math.PI * Math.max(f, 45) * t);
+      }
+    }
+    // Hi-Hat auf jedem Achtel: kurzes Rauschen
+    for (let i = 0; i < 0.03 * SR; i++) {
+      if (base + i >= LEN) break;
+      data[base + i] += 0.12 * Math.exp(-i / (0.008 * SR)) *
+        (Math.random() * 2 - 1);
+    }
+  }
+  return data;
+}
+
+const SOUNDS = { melody: makeMelody(), band: makeBand(),
+                 bass: makeBass(), chirp: makeChirp() };
 
 /* Die Stimme kommt als 48-kHz-WAV aus dem Asset-Bestand (KI-generiert,
  * OpenAI TTS). Der Mini-Parser liest den data-Chunk als 16-bit-PCM;
@@ -181,7 +229,7 @@ const canvas = el("wave");
 const ctx = canvas.getContext("2d");
 let W = 0, H = 0;
 const WINDOW_S = 0.025;
-const WINDOW_AT = { melody: 0.05, bass: 0.02, chirp: 0.06 };
+const WINDOW_AT = { melody: 0.05, band: 0.35, bass: 0.02, chirp: 0.06 };
 
 function resize() {
   const ratio = window.devicePixelRatio || 1;
