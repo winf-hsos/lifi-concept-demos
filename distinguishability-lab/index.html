@@ -28,6 +28,10 @@
       direction: rtl;            /* die juengsten Symbole bleiben sichtbar */
       text-align: left;
     }
+    /* Der Protokolltext selbst bleibt strikt links-nach-rechts; nur der
+       Container ist rtl, damit bei Ueberlauf die JUENGSTEN Symbole
+       sichtbar bleiben. */
+    .recv #st-recv { direction: ltr; unicode-bidi: isolate; }
     .recv .recv-label { color: var(--gray); font-size: 13px; font-family: var(--font); }
     .recv .err { color: var(--red); }
 
