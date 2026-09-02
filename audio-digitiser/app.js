@@ -5,7 +5,8 @@
  * Stellvertreter fuer stufenlos) oder eine KI-generierte
  * Sprachaufnahme wird digitalisiert:
  *
- *   Abtastrate:  wie oft je Sekunde wird gemessen? (48 kHz bis 1 kHz)
+ *   Abtastrate:  wie oft je Sekunde wird gemessen? (48 kHz bis
+ *                hinunter zu 250 Hz, das Extrem nur um es zu zeigen)
  *   Bit-Tiefe:   wie viele Lautstaerkestufen je Messung? (16 bis 1 bit)
  *
  * Das Ergebnis ist zu SEHEN (Treppenkurve ueber der glatten Welle) und
@@ -25,7 +26,7 @@ const SR = 48000;                  // "analoge" Referenzrate
 const DUR = 2.5;                   // Sekunden je Klang
 const LEN = SR * DUR;
 
-const RATES = [1000, 2000, 4000, 6000, 8000, 12000, 24000, 48000];
+const RATES = [250, 500, 1000, 2000, 4000, 6000, 8000, 12000, 24000, 48000];
 const RATE_HINTS = {
   48000: "dvd and studio standard",
   24000: "plenty for music",
@@ -35,6 +36,8 @@ const RATE_HINTS = {
   4000:  "muffled, highs are gone",
   2000:  "underwater",
   1000:  "barely a sound left",
+  500:   "voices become growls",
+  250:   "just rumble and clicks",
 };
 const DEPTHS = [
   { bits: 16, hint: "cd and wav standard" },
@@ -46,7 +49,7 @@ const DEPTHS = [
 ];
 const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 
-const state = { rateIdx: 7, depthIdx: 0 };
+const state = { rateIdx: 9, depthIdx: 0 };
 let motif = "melody";
 
 const el = (id) => document.getElementById(id);
