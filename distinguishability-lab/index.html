@@ -60,6 +60,10 @@
       border-color: var(--white);
     }
 
+    .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+    .controls .hint { margin-left: auto; }
+    @media (max-width: 640px) { .controls .hint { display: none; } }
+
     .takeaway {
       color: var(--yellow);
       text-align: center;
@@ -76,12 +80,17 @@
 
   <main>
     <h1>distinguishability lab</h1>
-    <p class="subtitle">how many symbols does your channel really support? turn the knobs and watch the error rate.</p>
+    <p class="subtitle">you are the sender: pick a symbol, watch the noisy readings arrive, and see when the receiver gets it wrong.</p>
 
     <canvas class="lab-canvas" id="lab" aria-hidden="true"></canvas>
     <div class="sim-note">simulated noise &mdash; the real numbers come from measuring your own link.</div>
 
     <div class="stats">
+      <div class="stat">
+        <div class="label">sending symbol</div>
+        <div class="value" id="st-sending">&ndash;</div>
+        <div class="note">click a lane, or press its key</div>
+      </div>
       <div class="stat">
         <div class="label">error rate</div>
         <div class="value" id="st-err">&ndash;</div>
@@ -113,7 +122,7 @@
           <button data-k="8">8</button>
           <button data-k="16">16</button>
         </div>
-        <div class="reading">more symbols: more bits, smaller gaps</div>
+        <div class="reading" id="rd-k"></div>
       </div>
       <div class="knob">
         <div class="label">measurement window (integration time)</div>
@@ -125,6 +134,11 @@
         <input type="range" id="in-range" min="25" max="100" step="5" value="100" aria-label="signal strength in percent">
         <div class="reading" id="rd-range"></div>
       </div>
+    </div>
+
+    <div class="controls" style="margin-top: 20px;">
+      <button class="ctrl" id="btn-pause">pause</button>
+      <span class="hint">keys: 0&ndash;9/a&ndash;f send symbol &middot; &uarr;/&darr; step &middot; space pause</span>
     </div>
 
     <div class="takeaway">longer windows calm the readings and cost rate. more symbols carry more bits and shrink the gaps.</div>
