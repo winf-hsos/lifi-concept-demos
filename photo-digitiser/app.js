@@ -1,4 +1,4 @@
-/* the digitiser — analog und digital.
+/* the photo digitiser — analog und digital.
  *
  * Links ein Fotomotiv als "analoges" Original (KI-generiert, geteilt
  * mit dem Copier als Bruecke), rechts seine Digitalisierung.
