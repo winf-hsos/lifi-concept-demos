@@ -133,7 +133,13 @@
       color: var(--yellow);
       margin-bottom: 14px;
     }
-    .modal-card .mod-row { color: var(--gray-light); font-size: 14px; margin-bottom: 4px; }
+    .modal-card .mod-row { color: var(--gray-light); font-size: 14px; margin-bottom: 2px; }
+    .modal-card .mod-calc {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray);
+      margin-bottom: 10px;
+    }
     .modal-card .mod-row b { font-family: var(--mono); color: var(--white); font-weight: normal; }
     .modal-card .mod-hint { color: var(--gray-dark); font-size: 12px; margin-top: 12px; }
 
@@ -213,7 +219,9 @@
       <div class="mod-q" id="mod-q"></div>
       <div class="mod-a" id="mod-a"></div>
       <div class="mod-row">information gained: <b id="mod-bits"></b></div>
+      <div class="mod-calc" id="mod-bits-calc"></div>
       <div class="mod-row">expected value of this question: <b id="mod-exp"></b></div>
+      <div class="mod-calc" id="mod-exp-calc"></div>
       <div class="mod-hint">click anywhere to continue</div>
     </div>
   </div>
@@ -224,6 +232,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

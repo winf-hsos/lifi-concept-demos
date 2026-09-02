@@ -133,11 +133,24 @@ function bookkeep(before) {
 }
 
 // --- Modal ------------------------------------------------------------------
-function showModal(sentence, answer, bits, expected) {
+/* Beide Rechnungen beziehen sich auf den AKTUELLEN Rest der Kandidaten,
+ * nicht auf die 16 vom Start. Gerade deshalb addieren sich die Bits am
+ * Ende exakt zu log2(16) = 4: log2(16/8) + log2(8/5) + log2(5/1) ist
+ * ein Teleskop, die Zwischenstaende kuerzen sich heraus. */
+function showModal(sentence, answer, bits, expected, before, after, yes) {
+  const no = before - yes;
   el("mod-q").textContent = sentence;
   el("mod-a").textContent = answer ? "yes" : "no";
   el("mod-bits").textContent = `${bits.toFixed(2)} bits`;
+  el("mod-bits-calc").textContent =
+    `${before} faces left, the answer keeps ${after}: ` +
+    `log₂(${before}/${after}) = ${bits.toFixed(2)}`;
   el("mod-exp").textContent = `${expected.toFixed(2)} bits`;
+  el("mod-exp-calc").textContent = (yes === 0 || no === 0)
+    ? `all ${before} would answer the same way — nothing to learn`
+    : `${yes} would say yes, ${no} no: ` +
+      `${yes}/${before}·log₂(${before}/${yes}) + ` +
+      `${no}/${before}·log₂(${before}/${no}) = ${expected.toFixed(2)}`;
   el("modal").classList.add("show");
 }
 
@@ -159,7 +172,7 @@ function ask(qi) {
   addLog(`${QUESTIONS[qi].label} <b>${answer ? "yes" : "no"}</b> — ` +
          `${before} &rarr; ${after} · ` +
          `<span class="bits">${bits.toFixed(2)} bits</span>`);
-  showModal(QUESTIONS[qi].sentence, answer, bits, expected);
+  showModal(QUESTIONS[qi].sentence, answer, bits, expected, before, after, yes);
   finishIfDone();
   render();
 }
@@ -178,7 +191,8 @@ function guess(i) {
   addLog(`is it ${CHARS[i].name}? <b>${answer ? "yes!" : "no"}</b> — ` +
          `${before} &rarr; ${after} · ` +
          `<span class="bits">${bits.toFixed(2)} bits</span>`);
-  showModal(`is the person ${CHARS[i].name}?`, answer, bits, expected);
+  showModal(`is the person ${CHARS[i].name}?`, answer, bits, expected,
+            before, after, 1);
   finishIfDone();
   render();
 }
