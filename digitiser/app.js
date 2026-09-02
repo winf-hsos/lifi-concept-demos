@@ -4,7 +4,8 @@
  * mit dem Copier als Bruecke), rechts seine Digitalisierung.
  * Zwei Entscheidungen, beide mit Preisschild:
  *
- *   Aufloesung:  wie viele Bildpunkte? (256er-Raster bis 8x8)
+ *   Aufloesung:  wie viele Bildpunkte? (256x256 bis hinunter
+ *                zu einem einzigen Pixel)
  *   Farbtiefe:   wie viele Farben je Punkt? 1 bit s/w, 8 bit grau,
  *                8/16/24 bit Farbe.
  *
@@ -18,7 +19,7 @@
 "use strict";
 
 const FULL = 256;
-const RESOLUTIONS = [8, 16, 32, 64, 128, 256];
+const RESOLUTIONS = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 const DEPTHS = [
   { key: "bw",   label: "b/w",        bits: 1,  desc: "2 colours: black or white" },
   { key: "grey", label: "greyscale",  bits: 8,  desc: "256 shades of grey" },
@@ -28,7 +29,7 @@ const DEPTHS = [
 ];
 const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 
-const state = { resIdx: 2, depthIdx: 4 };
+const state = { resIdx: 5, depthIdx: 4 };
 const el = (id) => document.getElementById(id);
 
 // --- Fotomotive --------------------------------------------------------------
@@ -155,7 +156,7 @@ document.addEventListener("keydown", (ev) => {
     state.resIdx -= 1;
     el("in-res").value = String(state.resIdx);
     render();
-  } else if (ev.key === "ArrowRight" && state.resIdx < 5) {
+  } else if (ev.key === "ArrowRight" && state.resIdx < RESOLUTIONS.length - 1) {
     state.resIdx += 1;
     el("in-res").value = String(state.resIdx);
     render();
