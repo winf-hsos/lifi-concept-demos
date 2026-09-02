@@ -278,6 +278,8 @@ el("btn-pause").addEventListener("click", () => {
 });
 
 window.addEventListener("keydown", (ev) => {
+  // Auf Buttons und Reglern gelten deren eigene Tastenbelegungen
+  if (["BUTTON", "INPUT"].includes(ev.target.tagName)) return;
   const digit = DIGITS.indexOf(ev.key.toUpperCase());
   if (ev.key === " ") {
     state.paused = !state.paused;
