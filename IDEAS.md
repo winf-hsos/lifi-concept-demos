@@ -13,7 +13,9 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **Question Game** (Symbole und Information, live): „Wer ist es?" als Informationsmessgerät. 16 KI-generierte Gesichter, neun Merkmalfragen (Splits bewusst verborgen, das Auszählen ist die Strategiearbeit); nach jeder Antwort rechnet ein Modal in Modulnotation vor: I = H₁ − H₂, samt Erwartungswert der Frage. Rateklicks zählen als Frage. Ergebnis: Fragenzahl, Bits gesamt, Bits je Frage gegen die Halbierungsstrategie.
 
-**The Copier** (Analog und digital, live): ein prozedurales Graustufenbild durch zwei Kopierketten mit identischem Rauschen; analog verschlammt es Generation um Generation, digital heilt die Schwellenentscheidung auf vier Stufen alles, bis das Rauschen die halbe Stufenluecke schlaegt. Ehrlich ausgewiesen: Digitalisierung kostet einmalig (Banding in Generation 0), gekippte Pixel bleiben fuer immer.
+**The Copier** (Analog und digital, live): eine Kopienwand. Jeder Druck auf "copy" haengt die naechste analoge Generation daneben (die Bilder schrumpfen, damit alles passt), Kopiersorgfalt in drei Worten statt Sigma; der Kontrastknopf "and as a file?" haengt die identische Dateikopie dazu. Umgebaut am 03.09.2026 von der Zwei-Ketten-Fassung.
+
+**The Digitiser** (Analog und digital, live): analoger Sonnenuntergang gegen seine Digitalisierung; Regler fuer Aufloesung (8x8 bis 256x256) und Farbtiefe (1 bit s/w, 8 bit grau, 8/16/24 bit Farbe), darunter die offene Rechnung Pixel x Bits = Dateigroesse plus Uebertragungsdauer bei 30 bit/s ueber die Lichtstrecke.
 
 **Byte Switchboard** (Zahlensysteme, live): acht Bits, Stellenwerte, Summenzeile, Binär, Dezimal, Hex, ASCII. Verlinkt von Deck 10, Folie 14.
 

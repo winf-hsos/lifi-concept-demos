@@ -1,22 +1,20 @@
 /* the copier — analog und digital.
  *
- * Dasselbe Bild laeuft durch zwei Kopierketten, und BEIDE bekommen bei
- * jeder Kopie dasselbe Rauschen auf jeden Pixel:
+ * Eine Kopienwand: Jeder Druck auf "copy" fotokopiert das letzte Bild
+ * an der Wand, mitsamt allem Rauschen, das schon drin steckt, plus dem
+ * eigenen Rauschen dieser Kopie. Die ganze Historie bleibt sichtbar
+ * und schrumpft, damit sie aufs Blatt passt — so sieht man das
+ * Original Generation um Generation verschwinden.
  *
- *   analog:  kopiert die Werte, wie sie sind. Das Rauschen addiert
- *            sich Generation um Generation, das Bild wird Matsch.
- *   digital: vor jeder Weitergabe wird jeder Pixel auf die naechste
- *            der vier vereinbarten Stufen gerundet (Schwellen-
- *            entscheidung). Kleines Rauschen wird dadurch VOLLSTAENDIG
- *            geheilt: Generation 100 gleicht Generation 1.
+ * Die Kopiersorgfalt gibt es bewusst OHNE Technikvokabular in drei
+ * Worten (carefully / normally / sloppily); dahinter steckt schlicht
+ * die Rauschstaerke je Kopie.
  *
- * Die Ehrlichkeit steckt in zwei Details. Erstens kostet die
- * Digitalisierung einmalig etwas: Schon Generation 0 der digitalen
- * Kette ist auf 4 Stufen gerundet und damit groeber als das Original.
- * Zweitens ist digital nicht magisch: Uebersteigt das Rauschen etwa
- * die halbe Stufenluecke, kippen Pixel auf die falsche Stufe, und
- * dieser Fehler bleibt dann fuer immer, denn die naechste Entscheidung
- * bestaetigt ihn. Genau die Grenze zeigt der Regler.
+ * Der Kontrastknopf "and as a file?" haengt EIN blaues Bild an die
+ * Wand: die Dateikopie nach derselben Zahl von Kopiervorgaengen,
+ * identisch mit dem Original, denn eine digitale Kopie wird bei jedem
+ * Schritt aus sauberen Zustaenden neu geboren. Mehr Digital-Mechanik
+ * (Aufloesung, Farbtiefe, Dateigroesse) zeigt der Digitalisierer.
  *
  * Kein Framework, kein Build; das Bild ist prozedural gezeichnet. */
 
@@ -24,11 +22,11 @@
 
 const SIZE = 128;
 const N = SIZE * SIZE;
-const LEVELS = [0, 85, 170, 255];
-const GAP = 85;
+const NOISE = { careful: 5, normal: 12, sloppy: 28 };
+const MAX_COPIES = 40;
 
-const state = { sigma: 8 };
-let generation = 0;
+let quality = "normal";
+let showFile = false;
 
 const el = (id) => document.getElementById(id);
 
@@ -40,22 +38,15 @@ function gaussian() {              // Box-Muller
 
 const clamp = (x) => Math.max(0, Math.min(255, x));
 
-function quantize(x) {
-  return LEVELS[Math.round(clamp(x) / GAP)];
-}
-
 // --- Das Original: eine kleine Nachtszene, prozedural ------------------------
 function drawOriginal() {
   const img = new Float64Array(N);
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      // Himmel: sanfter Verlauf; quantisiert ergibt er ehrliches Banding
       let v = 20 + (y / SIZE) * 55;
-      // Mond: heller Kreis mit weichem Rand
       const dm = Math.hypot(x - 92, y - 30);
       if (dm < 16) v = 235;
       else if (dm < 20) v = 235 - (dm - 16) / 4 * 170;
-      // Huegel: hinten hell, vorne dunkel, damit alle vier Stufen leben
       const h1 = 78 + 12 * Math.sin(x / 14) + 5 * Math.sin(x / 5);
       const h2 = 98 + 10 * Math.sin(x / 9 + 2);
       if (y > h1) v = 150;
@@ -67,99 +58,103 @@ function drawOriginal() {
 }
 
 const orig = drawOriginal();
-let analog = null;
-let digital = null;
-let digitalStart = null;                  // Generation 0 der digitalen Kette
+let gens = [];                    // die Bilder an der Wand, Index = Generation
 
-// --- Kopieren ---------------------------------------------------------------
-function copyOnce() {
-  for (let i = 0; i < N; i++) {
-    const noise = gaussian() * state.sigma;
-    analog[i] = clamp(analog[i] + noise);
-    digital[i] = quantize(digital[i] + noise);
-  }
-  generation += 1;
-  render();
-}
+// --- Die Wand ---------------------------------------------------------------
+const gallery = el("gallery");
 
-function copyMany(n) {
-  for (let k = 0; k < n; k++) {
-    for (let i = 0; i < N; i++) {
-      const noise = gaussian() * state.sigma;
-      analog[i] = clamp(analog[i] + noise);
-      digital[i] = quantize(digital[i] + noise);
-    }
-  }
-  generation += n;
-  render();
-}
-
-function reset() {
-  analog = Float64Array.from(orig);
-  digitalStart = Float64Array.from(orig, quantize);
-  digital = Float64Array.from(digitalStart);
-  generation = 0;
-  render();
-}
-
-// --- Anzeige ----------------------------------------------------------------
-function paint(canvasId, data) {
-  const ctx = el(canvasId).getContext("2d");
+function paint(canvas, data) {
+  const ctx = canvas.getContext("2d");
   const img = ctx.createImageData(SIZE, SIZE);
   for (let i = 0; i < N; i++) {
-    const v = data[i];
-    img.data[i * 4] = v;
-    img.data[i * 4 + 1] = v;
-    img.data[i * 4 + 2] = v;
+    img.data[i * 4] = data[i];
+    img.data[i * 4 + 1] = data[i];
+    img.data[i * 4 + 2] = data[i];
     img.data[i * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
 }
 
-function render() {
-  paint("cv-orig", orig);
-  paint("cv-analog", analog);
-  paint("cv-digital", digital);
-
-  let sq = 0;
-  for (let i = 0; i < N; i++) sq += (analog[i] - orig[i]) ** 2;
-  const rms = Math.sqrt(sq / N);
-  el("rd-analog").innerHTML =
-    `drift: <span class="${rms > 20 ? "bad" : ""}">rms ${rms.toFixed(1)}</span>`;
-
-  let flipped = 0;
-  for (let i = 0; i < N; i++) if (digital[i] !== digitalStart[i]) flipped += 1;
-  const pct = (flipped / N) * 100;
-  el("rd-digital").innerHTML =
-    `flipped pixels: <span class="${flipped ? "bad" : "good"}">` +
-    `${pct.toFixed(pct && pct < 0.1 ? 2 : 1)} %</span>`;
-
-  el("st-gen").textContent = generation;
-  el("st-noise").textContent = state.sigma;
-  const margin = el("st-margin");
-  // Kippgefahr je Kopie: Abstand der Schwelle in Sigma-Einheiten
-  const z = (GAP / 2) / state.sigma;
-  margin.textContent = z >= 4 ? "yes" : z >= 3 ? "barely" : "no";
-  margin.className = "value" + (z < 3 ? " bad" : "");
-  el("rd-noise").textContent =
-    `σ = ${state.sigma} · errors start near half the gap (≈ 42)`;
+function addItem(data, label, extraClass) {
+  const item = document.createElement("div");
+  item.className = "gitem" + (extraClass ? " " + extraClass : "");
+  const cv = document.createElement("canvas");
+  cv.width = SIZE;
+  cv.height = SIZE;
+  paint(cv, data);
+  const lbl = document.createElement("div");
+  lbl.className = "glabel";
+  lbl.textContent = label;
+  item.appendChild(cv);
+  item.appendChild(lbl);
+  gallery.appendChild(item);
+  return item;
 }
 
-// --- Bedienung --------------------------------------------------------------
-el("in-noise").addEventListener("input", (ev) => {
-  state.sigma = Number(ev.target.value);
-  render();
-});
+/* Je voller die Wand, desto kleiner die Bilder, damit alles draufpasst. */
+function fitWall() {
+  const n = gallery.children.length;
+  const size = n <= 3 ? 220 : n <= 6 ? 160 : n <= 12 ? 120 :
+               n <= 24 ? 92 : 70;
+  gallery.style.setProperty("--s", size + "px");
+}
+
+// --- Aktionen ---------------------------------------------------------------
+function renderFileCard() {
+  const old = gallery.querySelector(".gitem.file");
+  if (old) old.remove();
+  if (!showFile) return;
+  const copies = gens.length - 1;
+  const item = addItem(orig, `file copy ${copies}`, "file");
+  item.querySelector("canvas").title =
+    "a digital copy is re-read from clean states: identical to the original";
+}
+
+function copyOnce() {
+  if (gens.length - 1 >= MAX_COPIES) return;
+  const sigma = NOISE[quality];
+  const last = gens[gens.length - 1];
+  const next = new Float64Array(N);
+  for (let i = 0; i < N; i++) next[i] = clamp(last[i] + gaussian() * sigma);
+  gens.push(next);
+  const copies = gens.length - 1;
+  addItem(next, `copy ${copies}`);
+  renderFileCard();               // ans Ende ruecken und Zaehler mitziehen
+  fitWall();
+  el("btn-copy").disabled = copies >= MAX_COPIES;
+}
+
+function reset() {
+  gens = [orig];
+  showFile = false;
+  gallery.innerHTML = "";
+  addItem(orig, "original", "first");
+  fitWall();
+  el("btn-copy").disabled = false;
+}
+
 el("btn-copy").addEventListener("click", copyOnce);
-el("btn-copy10").addEventListener("click", () => copyMany(10));
-el("btn-copy100").addEventListener("click", () => copyMany(100));
+el("btn-file").addEventListener("click", () => {
+  showFile = !showFile;
+  renderFileCard();
+  fitWall();
+});
 el("btn-reset").addEventListener("click", reset);
+
+el("seg").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  quality = b.dataset.q;
+  el("seg").querySelectorAll("button").forEach((x) =>
+    x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+});
 
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
+  if (tag === "BUTTON") document.activeElement.blur();
   if (ev.key === "c") copyOnce();
-  else if (ev.key === "x") copyMany(10);
+  else if (ev.key === "f") el("btn-file").click();
   else if (ev.key === "r") reset();
 });
 

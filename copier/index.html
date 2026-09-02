@@ -8,58 +8,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/style.css">
   <style>
-    .chains {
+    .gallery {
+      --s: 220px;
       display: flex;
-      gap: clamp(16px, 4vw, 44px);
-      justify-content: center;
-      align-items: flex-start;
       flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: flex-end;
       margin: 26px 0 10px;
+      min-height: 240px;
     }
-    .chain { text-align: center; }
-    .chain .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
-    .chain canvas {
-      width: min(256px, 84vw);
+    .gitem { text-align: center; }
+    .gitem canvas {
+      width: var(--s);
       aspect-ratio: 1;
       image-rendering: pixelated;
       border: 1px solid var(--gray-dark);
-      border-radius: 8px;
+      border-radius: 6px;
       background: #000;
+      display: block;
     }
-    .chain .readout {
+    .gitem .glabel {
       font-family: var(--mono);
-      font-size: 14px;
-      color: var(--gray-light);
-      margin-top: 8px;
-      min-height: 20px;
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 4px;
     }
-    .chain .readout .bad { color: var(--red); }
-    .chain .readout .good { color: var(--green); }
+    .gitem.first canvas { border-color: var(--gray); }
+    .gitem.file canvas { border-color: var(--blue); }
+    .gitem.file .glabel { color: var(--blue); }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px 24px;
-      margin: 18px 0 8px;
+    .noiselbl { text-align: center; color: var(--gray); font-size: 13px; margin-top: 14px; }
+    .seg { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+    .seg button.ctrl[aria-pressed="true"] {
+      border-color: var(--blue);
+      color: var(--blue);
     }
-    .stat .label { color: var(--gray); font-size: 13px; }
-    .stat .value { font-family: var(--mono); font-size: clamp(22px, 4vw, 32px); }
-    .stat .value.bad { color: var(--red); }
-    .stat .note { color: var(--gray-dark); font-size: 12px; }
 
-    .panel {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px 32px;
-      border-top: 1px solid var(--gray-dark);
-      padding-top: 18px;
-      margin-top: 8px;
-    }
-    .knob .label { color: var(--gray); font-size: 13px; margin-bottom: 6px; }
-    .knob .reading { font-family: var(--mono); color: var(--gray-light); font-size: 14px; margin-top: 2px; }
-    input[type="range"] { width: 100%; accent-color: var(--blue); }
-
-    .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 20px; }
+    .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 18px; }
     .controls .hint { width: 100%; text-align: center; }
 
     .takeaway {
@@ -78,66 +64,25 @@
 
   <main>
     <h1>the copier</h1>
-    <p class="subtitle">copy a picture again and again. both chains suffer the same noise &mdash; only one of them decides before passing it on.</p>
+    <p class="subtitle">every press of &ldquo;copy&rdquo; photocopies the last picture on the wall &mdash; noise and all. the history stays up, so you can watch the original fade away.</p>
 
-    <div class="chains">
-      <div class="chain">
-        <div class="clabel">original</div>
-        <canvas id="cv-orig" width="128" height="128"></canvas>
-        <div class="readout">&nbsp;</div>
-      </div>
-      <div class="chain">
-        <div class="clabel">analog chain: copy the values as they are</div>
-        <canvas id="cv-analog" width="128" height="128"></canvas>
-        <div class="readout" id="rd-analog"></div>
-      </div>
-      <div class="chain">
-        <div class="clabel">digital chain: 4 agreed levels, decide, then copy</div>
-        <canvas id="cv-digital" width="128" height="128"></canvas>
-        <div class="readout" id="rd-digital"></div>
-      </div>
-    </div>
+    <div class="gallery" id="gallery"></div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="label">generation</div>
-        <div class="value" id="st-gen">0</div>
-        <div class="note">copies of copies</div>
-      </div>
-      <div class="stat">
-        <div class="label">noise per copy</div>
-        <div class="value" id="st-noise">&ndash;</div>
-        <div class="note">added to every pixel, every copy</div>
-      </div>
-      <div class="stat">
-        <div class="label">gap between levels</div>
-        <div class="value">85</div>
-        <div class="note">4 levels on a 0&ndash;255 scale</div>
-      </div>
-      <div class="stat">
-        <div class="label">safety margin</div>
-        <div class="value" id="st-margin">&ndash;</div>
-        <div class="note">half the gap beats the noise?</div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="knob">
-        <div class="label">noise per copy</div>
-        <input type="range" id="in-noise" min="2" max="60" step="1" value="8" aria-label="noise added per copy">
-        <div class="reading" id="rd-noise"></div>
-      </div>
+    <div class="noiselbl">how carefully does the machine copy?</div>
+    <div class="seg" id="seg" role="group" aria-label="copy quality">
+      <button class="ctrl" data-q="careful" aria-pressed="false">carefully</button>
+      <button class="ctrl" data-q="normal" aria-pressed="true">normally</button>
+      <button class="ctrl" data-q="sloppy" aria-pressed="false">sloppily</button>
     </div>
 
     <div class="controls">
-      <button class="ctrl" id="btn-copy">copy once</button>
-      <button class="ctrl" id="btn-copy10">copy &times;10</button>
-      <button class="ctrl" id="btn-copy100">copy &times;100</button>
+      <button class="ctrl" id="btn-copy">copy</button>
+      <button class="ctrl" id="btn-file">and as a file?</button>
       <button class="ctrl" id="btn-reset">reset</button>
-      <span class="hint">keys: c copy once &middot; x copy &times;10 &middot; r reset</span>
+      <span class="hint">keys: c copy &middot; f as a file &middot; r reset</span>
     </div>
 
-    <div class="takeaway">digitising costs a little, once. copying costs nothing &mdash; until the noise crosses half the gap.</div>
+    <div class="takeaway">an analog copy copies the noise, then adds its own. a digital copy starts clean every time.</div>
   </main>
 
   <div class="demo-footer">
@@ -146,6 +91,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
