@@ -15,6 +15,8 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **Distinguishability Lab** (Signal und Rauschen, live): verrauschter Kanal als Oszilloskop-Sweep, Alphabet und Messfenster als Regler, Störknopf, Zeitlupe, Einzelmessung per Taste, Fehlerquote und Durchsatz live.
 
+**Pixel Painter** (Codesysteme, live): 8x8-Raster mit einem Bit je Pixel, daneben die acht Bytes binaer und als editierbare Hexfelder, beide Richtungen live; "break a byte" und "flip one bit" zeigen den Schaden rot, "repair" holt den heilen Stand zurueck.
+
 **Drift Simulator** (Abtastung und Synchronisation, live): Sender legt eine Farbfolge in Zeitschlitze, die Empfängeruhr geht einstellbar falsch; Abtastpunkte wandern sichtbar, die Statistik zeigt den Versatz und die halbe-Schlitz-Grenze, eine zuschaltbare Sync-Marke richtet neu aus und kostet sichtbar Rate. Farben ohne Bit-Zuordnung (Priming-Regel).
 
 ## Die Kandidaten, nach Kurskonzepten

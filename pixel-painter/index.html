@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pixel painter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .workbench {
+      display: flex;
+      gap: clamp(20px, 5vw, 56px);
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin: 26px 0 10px;
+    }
+
+    .grid-wrap .colhead { height: 22px; }
+    .pixel-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 38px);
+      grid-auto-rows: 38px;
+      gap: 4px;
+      touch-action: none;
+    }
+    .pixel-grid button {
+      border: 1px solid var(--gray-dark);
+      border-radius: 4px;
+      background: #14171a;
+      padding: 0;
+      cursor: pointer;
+    }
+    .pixel-grid button[aria-pressed="true"] { background: var(--white); }
+    .pixel-grid button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .pixel-grid button.hurt { box-shadow: 0 0 0 2px var(--red); }
+
+    .bytes .colhead {
+      display: flex;
+      gap: 18px;
+      height: 22px;
+      color: var(--gray);
+      font-size: 13px;
+    }
+    .bytes .colhead .h-bin { width: 138px; }
+    .brow {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      height: 42px;
+      font-family: var(--mono);
+    }
+    .brow .bin {
+      width: 138px;
+      font-size: 16px;
+      color: var(--gray-light);
+      letter-spacing: 1px;
+      white-space: pre;
+    }
+    .brow.hurtrow .bin { color: var(--red); }
+    .brow input.hex {
+      width: 52px;
+      font-family: var(--mono);
+      font-size: 17px;
+      text-align: center;
+      text-transform: uppercase;
+      color: var(--white);
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      padding: 5px 0;
+    }
+    .brow input.hex:focus { outline: 2px solid var(--blue); border-color: var(--blue); }
+    .brow input.hex.invalid { border-color: var(--red); outline-color: var(--red); }
+
+    .summary {
+      text-align: center;
+      color: var(--gray);
+      font-size: 14px;
+      margin: 6px 0 18px;
+      font-family: var(--mono);
+    }
+    .summary .on { color: var(--white); }
+
+    .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; }
+    .controls .hint { width: 100%; text-align: center; }
+
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 24px 0 4px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>pixel painter</h1>
+    <p class="subtitle">one bit per pixel: paint the picture and write the bytes &mdash; or edit the hex and paint with numbers.</p>
+
+    <div class="workbench">
+      <div class="grid-wrap">
+        <div class="colhead"></div>
+        <div class="pixel-grid" id="grid" role="group" aria-label="8 by 8 pixel canvas, one bit per pixel"></div>
+      </div>
+      <div class="bytes">
+        <div class="colhead"><span class="h-bin">binary</span><span>hex</span></div>
+        <div id="rows"></div>
+      </div>
+    </div>
+
+    <div class="summary">64 pixels = 64 bits = 8 bytes &middot; <span class="on" id="st-on"></span> pixels on</div>
+
+    <div class="controls">
+      <button class="ctrl" id="btn-break">break a byte</button>
+      <button class="ctrl" id="btn-bit">flip one bit</button>
+      <button class="ctrl" id="btn-repair" disabled>repair</button>
+      <button class="ctrl" id="btn-invert">invert</button>
+      <button class="ctrl" id="btn-clear">clear</button>
+      <span class="hint">keys: arrows move &middot; space paint &middot; b break a byte &middot; f flip one bit &middot; r repair &middot; i invert</span>
+    </div>
+
+    <div class="takeaway">the picture and the bytes are the same thing, written twice. change one and the other must follow.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/code-systems.html">codesysteme</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>
