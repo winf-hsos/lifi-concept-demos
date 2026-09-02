@@ -1,7 +1,7 @@
 /* the digitiser — analog und digital.
  *
- * Links eine "analoge" Szene (prozedural, mit weichen Verlaeufen als
- * Stellvertreter fuer endloses Detail), rechts ihre Digitalisierung.
+ * Links ein Fotomotiv als "analoges" Original (KI-generiert, geteilt
+ * mit dem Copier als Bruecke), rechts seine Digitalisierung.
  * Zwei Entscheidungen, beide mit Preisschild:
  *
  *   Aufloesung:  wie viele Bildpunkte? (256er-Raster bis 8x8)
@@ -13,7 +13,7 @@
  * die eigene Lichtstrecke braeuchte (30 bit/s als mittlere Challenge-
  * Groessenordnung). Das verankert Dateigroessen im Projekt.
  *
- * Kein Framework, kein Build; die Szene ist prozedural gezeichnet. */
+ * Kein Framework, kein Build. */
 
 "use strict";
 
@@ -31,48 +31,23 @@ const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 const state = { resIdx: 2, depthIdx: 4 };
 const el = (id) => document.getElementById(id);
 
-// --- Die analoge Szene: ein Sonnenuntergang, prozedural ----------------------
+// --- Fotomotive --------------------------------------------------------------
+const MOTIFS = ["parrot", "sunset", "lighthouse"];
+let motif = "parrot";
 const origCv = el("cv-orig");
-function drawScene(ctx) {
-  // Himmel
-  const sky = ctx.createLinearGradient(0, 0, 0, 160);
-  sky.addColorStop(0, "#251942");
-  sky.addColorStop(0.55, "#b3452c");
-  sky.addColorStop(1, "#f2a541");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, FULL, 160);
-  // Sonne mit weichem Rand
-  const sun = ctx.createRadialGradient(170, 132, 4, 170, 132, 34);
-  sun.addColorStop(0, "#ffe89b");
-  sun.addColorStop(0.6, "#ffd23f");
-  sun.addColorStop(1, "rgba(255, 210, 63, 0)");
-  ctx.fillStyle = sun;
-  ctx.fillRect(120, 82, 100, 100);
-  // Meer mit Lichtspur
-  const sea = ctx.createLinearGradient(0, 160, 0, FULL);
-  sea.addColorStop(0, "#d97c3a");
-  sea.addColorStop(0.25, "#5a4a7a");
-  sea.addColorStop(1, "#131a33");
-  ctx.fillStyle = sea;
-  ctx.fillRect(0, 160, FULL, FULL - 160);
-  for (let y = 162; y < 220; y += 5) {
-    const w = 60 - (y - 162);
-    if (w <= 4) break;
-    ctx.fillStyle = "rgba(255, 214, 120, " + (0.35 - (y - 162) * 0.005) + ")";
-    ctx.fillRect(170 - w / 2, y, w, 2);
-  }
-  // Huegelsilhouette vorn
-  ctx.fillStyle = "#0a0f1e";
-  ctx.beginPath();
-  ctx.moveTo(0, FULL);
-  for (let x = 0; x <= FULL; x++) {
-    ctx.lineTo(x, 226 - 14 * Math.sin(x / 34) - 6 * Math.sin(x / 11));
-  }
-  ctx.lineTo(FULL, FULL);
-  ctx.closePath();
-  ctx.fill();
+const photos = {};
+
+function loadMotif(name) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => { photos[name] = img; resolve(); };
+    img.src = `../assets/photos/${name}.png`;
+  });
 }
-drawScene(origCv.getContext("2d"));
+
+function drawOriginal() {
+  origCv.getContext("2d").drawImage(photos[motif], 0, 0, FULL, FULL);
+}
 
 // --- Digitalisieren ----------------------------------------------------------
 const level = (v, bits) => {
@@ -187,5 +162,18 @@ document.addEventListener("keydown", (ev) => {
   }
 });
 
+el("motifs").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  motif = b.dataset.m;
+  el("motifs").querySelectorAll("button").forEach((x) =>
+    x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  drawOriginal();
+  render();
+});
+
 // --- Start ------------------------------------------------------------------
-render();
+Promise.all(MOTIFS.map(loadMotif)).then(() => {
+  drawOriginal();
+  render();
+});

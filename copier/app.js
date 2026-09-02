@@ -4,28 +4,31 @@
  * an der Wand, mitsamt allem Rauschen, das schon drin steckt, plus dem
  * eigenen Rauschen dieser Kopie. Die ganze Historie bleibt sichtbar
  * und schrumpft, damit sie aufs Blatt passt — so sieht man das
- * Original Generation um Generation verschwinden.
+ * Original Generation um Generation verschwinden. Es gibt KEINE
+ * Obergrenze: Wer will, kopiert, bis nur noch Griess uebrig ist.
  *
- * Die Kopiersorgfalt gibt es bewusst OHNE Technikvokabular in drei
- * Worten (carefully / normally / sloppily); dahinter steckt schlicht
- * die Rauschstaerke je Kopie.
+ * Ausgangsbild ist eines von drei Fotomotiven (KI-generiert, geteilt
+ * mit dem Digitiser als Bruecke zwischen beiden Demos). Die
+ * Kopiersorgfalt gibt es bewusst OHNE Technikvokabular in drei Worten
+ * (carefully / normally / sloppily); dahinter steckt schlicht die
+ * Rauschstaerke je Kopie und Farbkanal.
  *
  * Der Kontrastknopf "and as a file?" haengt EIN blaues Bild an die
  * Wand: die Dateikopie nach derselben Zahl von Kopiervorgaengen,
  * identisch mit dem Original, denn eine digitale Kopie wird bei jedem
- * Schritt aus sauberen Zustaenden neu geboren. Mehr Digital-Mechanik
- * (Aufloesung, Farbtiefe, Dateigroesse) zeigt der Digitalisierer.
+ * Schritt aus sauberen Zustaenden neu geboren.
  *
- * Kein Framework, kein Build; das Bild ist prozedural gezeichnet. */
+ * Kein Framework, kein Build. */
 
 "use strict";
 
 const SIZE = 128;
-const N = SIZE * SIZE;
+const N = SIZE * SIZE * 4;         // RGBA
 const NOISE = { careful: 5, normal: 12, sloppy: 28 };
-const MAX_COPIES = 40;
+const MOTIFS = ["parrot", "sunset", "lighthouse"];
 
 let quality = "normal";
+let motif = "parrot";
 let showFile = false;
 
 const el = (id) => document.getElementById(id);
@@ -36,28 +39,25 @@ function gaussian() {              // Box-Muller
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-const clamp = (x) => Math.max(0, Math.min(255, x));
+// --- Fotomotive laden --------------------------------------------------------
+const originals = {};              // Name -> Uint8ClampedArray (128x128 RGBA)
 
-// --- Das Original: eine kleine Nachtszene, prozedural ------------------------
-function drawOriginal() {
-  const img = new Float64Array(N);
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      let v = 20 + (y / SIZE) * 55;
-      const dm = Math.hypot(x - 92, y - 30);
-      if (dm < 16) v = 235;
-      else if (dm < 20) v = 235 - (dm - 16) / 4 * 170;
-      const h1 = 78 + 12 * Math.sin(x / 14) + 5 * Math.sin(x / 5);
-      const h2 = 98 + 10 * Math.sin(x / 9 + 2);
-      if (y > h1) v = 150;
-      if (y > h2) v = 60;
-      img[y * SIZE + x] = v;
-    }
-  }
-  return img;
+function loadMotif(name) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement("canvas");
+      cv.width = SIZE;
+      cv.height = SIZE;
+      const ctx = cv.getContext("2d");
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+      originals[name] = ctx.getImageData(0, 0, SIZE, SIZE).data;
+      resolve();
+    };
+    img.src = `../assets/photos/${name}.png`;
+  });
 }
 
-const orig = drawOriginal();
 let gens = [];                    // die Bilder an der Wand, Index = Generation
 
 // --- Die Wand ---------------------------------------------------------------
@@ -66,12 +66,7 @@ const gallery = el("gallery");
 function paint(canvas, data) {
   const ctx = canvas.getContext("2d");
   const img = ctx.createImageData(SIZE, SIZE);
-  for (let i = 0; i < N; i++) {
-    img.data[i * 4] = data[i];
-    img.data[i * 4 + 1] = data[i];
-    img.data[i * 4 + 2] = data[i];
-    img.data[i * 4 + 3] = 255;
-  }
+  img.data.set(data);
   ctx.putImageData(img, 0, 0);
 }
 
@@ -95,7 +90,7 @@ function addItem(data, label, extraClass) {
 function fitWall() {
   const n = gallery.children.length;
   const size = n <= 3 ? 220 : n <= 6 ? 160 : n <= 12 ? 120 :
-               n <= 24 ? 92 : 70;
+               n <= 24 ? 92 : n <= 48 ? 70 : n <= 96 ? 54 : 40;
   gallery.style.setProperty("--s", size + "px");
 }
 
@@ -105,32 +100,33 @@ function renderFileCard() {
   if (old) old.remove();
   if (!showFile) return;
   const copies = gens.length - 1;
-  const item = addItem(orig, `file copy ${copies}`, "file");
+  const item = addItem(originals[motif], `file copy ${copies}`, "file");
   item.querySelector("canvas").title =
     "a digital copy is re-read from clean states: identical to the original";
 }
 
 function copyOnce() {
-  if (gens.length - 1 >= MAX_COPIES) return;
   const sigma = NOISE[quality];
   const last = gens[gens.length - 1];
-  const next = new Float64Array(N);
-  for (let i = 0; i < N; i++) next[i] = clamp(last[i] + gaussian() * sigma);
+  const next = new Uint8ClampedArray(N);
+  for (let i = 0; i < N; i += 4) {
+    next[i] = last[i] + gaussian() * sigma;         // Uint8Clamped rundet
+    next[i + 1] = last[i + 1] + gaussian() * sigma; // und begrenzt selbst
+    next[i + 2] = last[i + 2] + gaussian() * sigma;
+    next[i + 3] = 255;
+  }
   gens.push(next);
-  const copies = gens.length - 1;
-  addItem(next, `copy ${copies}`);
+  addItem(next, `copy ${gens.length - 1}`);
   renderFileCard();               // ans Ende ruecken und Zaehler mitziehen
   fitWall();
-  el("btn-copy").disabled = copies >= MAX_COPIES;
 }
 
 function reset() {
-  gens = [orig];
+  gens = [originals[motif]];
   showFile = false;
   gallery.innerHTML = "";
-  addItem(orig, "original", "first");
+  addItem(originals[motif], "original", "first");
   fitWall();
-  el("btn-copy").disabled = false;
 }
 
 el("btn-copy").addEventListener("click", copyOnce);
@@ -149,6 +145,15 @@ el("seg").addEventListener("click", (ev) => {
     x.setAttribute("aria-pressed", x === b ? "true" : "false"));
 });
 
+el("motifs").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  motif = b.dataset.m;
+  el("motifs").querySelectorAll("button").forEach((x) =>
+    x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  reset();
+});
+
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
@@ -159,4 +164,4 @@ document.addEventListener("keydown", (ev) => {
 });
 
 // --- Start ------------------------------------------------------------------
-reset();
+Promise.all(MOTIFS.map(loadMotif)).then(reset);

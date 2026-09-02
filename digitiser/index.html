@@ -8,6 +8,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/style.css">
   <style>
+    .motifs { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 18px; }
+    .motifs .mlabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .motifs button {
+      width: 52px; height: 52px;
+      padding: 2px;
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      cursor: pointer;
+      line-height: 0;
+    }
+    .motifs button img { width: 100%; border-radius: 4px; }
+    .motifs button[aria-pressed="true"] { border-color: var(--blue); }
+    .motifs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
     .pair {
       display: flex;
       gap: clamp(16px, 5vw, 56px);
@@ -71,9 +86,16 @@
     <h1>the digitiser</h1>
     <p class="subtitle">turn the analog picture into numbers: you choose how many pixels and how many colours &mdash; and pay for every one of them in bytes.</p>
 
+    <div class="motifs" id="motifs" role="group" aria-label="choose a picture">
+      <span class="mlabel">picture:</span>
+      <button data-m="parrot" aria-pressed="true"><img src="../assets/photos/parrot.png" alt="parrot"></button>
+      <button data-m="sunset" aria-pressed="false"><img src="../assets/photos/sunset.png" alt="sunset"></button>
+      <button data-m="lighthouse" aria-pressed="false"><img src="../assets/photos/lighthouse.png" alt="lighthouse"></button>
+    </div>
+
     <div class="pair">
       <div class="side">
-        <div class="clabel">the analog scene (endless detail)</div>
+        <div class="clabel">the analog picture (endless detail)</div>
         <canvas id="cv-orig" width="256" height="256"></canvas>
       </div>
       <div class="side">
@@ -102,6 +124,7 @@
     </div>
 
     <div class="takeaway">digitising is choosing what to throw away. every pixel and every colour you keep costs bits.</div>
+    <div style="color: var(--gray-dark); font-size: 12px; text-align: right;">photos: ai-generated (gpt-image-2)</div>
   </main>
 
   <div class="demo-footer">
@@ -110,6 +133,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

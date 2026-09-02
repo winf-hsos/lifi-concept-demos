@@ -16,7 +16,7 @@
       justify-content: center;
       align-items: flex-end;
       margin: 26px 0 10px;
-      min-height: 240px;
+      min-height: 250px;
     }
     .gitem { text-align: center; }
     .gitem canvas {
@@ -37,6 +37,21 @@
     .gitem.first canvas { border-color: var(--gray); }
     .gitem.file canvas { border-color: var(--blue); }
     .gitem.file .glabel { color: var(--blue); }
+
+    .motifs { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 18px; }
+    .motifs .mlabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .motifs button {
+      width: 52px; height: 52px;
+      padding: 2px;
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      cursor: pointer;
+      line-height: 0;
+    }
+    .motifs button img { width: 100%; border-radius: 4px; }
+    .motifs button[aria-pressed="true"] { border-color: var(--blue); }
+    .motifs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 
     .noiselbl { text-align: center; color: var(--gray); font-size: 13px; margin-top: 14px; }
     .seg { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
@@ -66,6 +81,13 @@
     <h1>the copier</h1>
     <p class="subtitle">every press of &ldquo;copy&rdquo; photocopies the last picture on the wall &mdash; noise and all. the history stays up, so you can watch the original fade away.</p>
 
+    <div class="motifs" id="motifs" role="group" aria-label="choose a picture">
+      <span class="mlabel">picture:</span>
+      <button data-m="parrot" aria-pressed="true"><img src="../assets/photos/parrot.png" alt="parrot"></button>
+      <button data-m="sunset" aria-pressed="false"><img src="../assets/photos/sunset.png" alt="sunset"></button>
+      <button data-m="lighthouse" aria-pressed="false"><img src="../assets/photos/lighthouse.png" alt="lighthouse"></button>
+    </div>
+
     <div class="gallery" id="gallery"></div>
 
     <div class="noiselbl">how carefully does the machine copy?</div>
@@ -83,6 +105,7 @@
     </div>
 
     <div class="takeaway">an analog copy copies the noise, then adds its own. a digital copy starts clean every time.</div>
+    <div class="sim-note" style="color: var(--gray-dark); font-size: 12px; text-align: right;">photos: ai-generated (gpt-image-2)</div>
   </main>
 
   <div class="demo-footer">
@@ -91,6 +114,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
