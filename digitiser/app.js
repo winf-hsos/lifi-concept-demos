@@ -46,8 +46,26 @@ function loadMotif(name) {
   });
 }
 
+/* Das Original samt hauchduennem Abtastraster: jede Zelle wird rechts
+ * zu EINEM Pixel zusammengefasst. Bei feinen Rastern (Zellen unter
+ * 8 px) faellt das Gitter weg, sonst laege es wie ein Schleier
+ * ueber dem Bild. */
 function drawOriginal() {
-  origCv.getContext("2d").drawImage(photos[motif], 0, 0, FULL, FULL);
+  const ctx = origCv.getContext("2d");
+  ctx.drawImage(photos[motif], 0, 0, FULL, FULL);
+  const res = RESOLUTIONS[state.resIdx];
+  const cell = FULL / res;
+  if (cell < 8) return;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i < res; i++) {
+    ctx.moveTo(i * cell + 0.5, 0);
+    ctx.lineTo(i * cell + 0.5, FULL);
+    ctx.moveTo(0, i * cell + 0.5);
+    ctx.lineTo(FULL, i * cell + 0.5);
+  }
+  ctx.stroke();
 }
 
 // --- Digitalisieren ----------------------------------------------------------
@@ -65,7 +83,7 @@ function digitise() {
   small.height = res;
   const sctx = small.getContext("2d");
   sctx.imageSmoothingEnabled = true;
-  sctx.drawImage(origCv, 0, 0, res, res);
+  sctx.drawImage(photos[motif], 0, 0, res, res);
   const img = sctx.getImageData(0, 0, res, res);
   const d = img.data;
   // Quantisieren: jeden Kanal auf die vereinbarten Stufen runden
@@ -121,6 +139,7 @@ function updateCalc() {
 }
 
 function render() {
+  drawOriginal();
   digitise();
   updateCalc();
 }
@@ -169,12 +188,8 @@ el("motifs").addEventListener("click", (ev) => {
   motif = b.dataset.m;
   el("motifs").querySelectorAll("button").forEach((x) =>
     x.setAttribute("aria-pressed", x === b ? "true" : "false"));
-  drawOriginal();
   render();
 });
 
 // --- Start ------------------------------------------------------------------
-Promise.all(MOTIFS.map(loadMotif)).then(() => {
-  drawOriginal();
-  render();
-});
+Promise.all(MOTIFS.map(loadMotif)).then(render);
