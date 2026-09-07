@@ -25,8 +25,9 @@
     button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
     button.ctrl:focus-visible, .motifs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 
-    .pair { display: flex; gap: clamp(16px, 4vw, 40px); justify-content: center; align-items: flex-start; flex-wrap: wrap; margin: 22px 0 10px; }
+    .pair { display: flex; gap: clamp(16px, 3vw, 32px); justify-content: center; align-items: flex-start; flex-wrap: wrap; margin: 22px 0 10px; }
     .side { text-align: center; }
+    .side.picture { width: min(320px, 84vw); }
     .side .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
     .viewer { position: relative; width: min(320px, 84vw); }
     .viewer canvas {
@@ -38,9 +39,12 @@
       padding: 20px; text-align: center; color: var(--red); font-size: 14px;
       background: rgba(0,0,0,0.85); border-radius: 8px;
     }
-    .pixinfo { font-family: var(--mono); color: var(--gray-light); font-size: 13px; margin-top: 8px; min-height: 1.4em; }
+    /* display:flex wuerde das hidden-Attribut sonst ueberstimmen: die Flaeche
+       laege unsichtbar ueber dem Bild, dunkelte es ab und schluckte Klicks. */
+    .viewer .refuse[hidden] { display: none; }
+    .pixinfo { font-family: var(--mono); color: var(--gray-light); font-size: 13px; margin-top: 8px; min-height: 2.8em; line-height: 1.4; }
 
-    .hexwrap { width: min(560px, 92vw); text-align: left; }
+    .hexwrap { width: min(540px, 92vw); text-align: left; }
     .hex {
       font-family: var(--mono); font-size: 13px; line-height: 1.55;
       max-height: 420px; overflow: auto; border: 1px solid var(--gray-dark); border-radius: 8px;
@@ -109,7 +113,7 @@
     </div>
 
     <div class="pair">
-      <div class="side">
+      <div class="side picture">
         <div class="clabel">what a viewer makes of the bytes</div>
         <div class="viewer">
           <canvas id="cv" width="256" height="256" aria-label="the decoded picture"></canvas>
@@ -149,6 +153,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

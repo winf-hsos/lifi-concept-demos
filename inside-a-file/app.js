@@ -182,6 +182,17 @@ function renderHex() {
 
 function cell(i) { return el("hex").querySelector(`.b[data-i="${i}"]`); }
 
+// Eine Zelle im Hex-Kasten sichtbar machen, ohne die Seite zu scrollen
+// (scrollIntoView wuerde auch das Fenster bewegen, das springt).
+function reveal(s) {
+  const host = el("hex");
+  const top = s.offsetTop - host.offsetTop;
+  if (top < host.scrollTop + 8) host.scrollTop = top - 8;
+  else if (top + s.offsetHeight > host.scrollTop + host.clientHeight - 8) {
+    host.scrollTop = top + s.offsetHeight - host.clientHeight + 8;
+  }
+}
+
 function updateCell(i) {
   const s = cell(i);
   if (!s) return;
@@ -258,7 +269,7 @@ function highlightPixel(p) {
   const i0 = d.map[p];
   for (let k = 0; k < 3; k++) { const s = cell(i0 + k); if (s) s.classList.add("hl"); }
   const s = cell(i0);
-  if (s) s.scrollIntoView({ block: "nearest" });
+  if (s) reveal(s);
   const b = state.bytes;
   const x = p % d.w, y = Math.floor(p / d.w);
   el("pixinfo").textContent = `pixel (${x}, ${y}) = bytes ${i0}–${i0 + 2}: blue ${hex2(b[i0] || 0)}, green ${hex2(b[i0 + 1] || 0)}, red ${hex2(b[i0 + 2] || 0)}`;
@@ -269,7 +280,7 @@ function select(i) {
   state.selected = i;
   state.pending = null;
   const s = cell(i);
-  if (s) { s.classList.add("sel"); s.scrollIntoView({ block: "nearest" }); }
+  if (s) { s.classList.add("sel"); reveal(s); }
   describe(i);
   const p = pixelOfByte(i);
   highlightPixel(p);
@@ -322,7 +333,7 @@ el("hex").addEventListener("click", (ev) => {
   const s = ev.target.closest(".b");
   if (!s) return;
   select(Number(s.dataset.i));
-  el("hex").focus();
+  el("hex").focus({ preventScroll: true });
 });
 el("hex").addEventListener("mouseover", (ev) => {
   const s = ev.target.closest(".b");
@@ -367,7 +378,7 @@ cv.addEventListener("click", (ev) => {
   const p = pixelAt(ev);
   if (p < 0) return;
   select(state.decoded.map[p]);
-  el("hex").focus();
+  el("hex").focus({ preventScroll: true });
 });
 
 el("motifs").addEventListener("click", (ev) => {
