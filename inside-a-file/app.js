@@ -373,7 +373,9 @@ function pixelAt(ev) {
   if (x < 0 || y < 0 || x >= d.w || y >= d.h) return -1;
   return y * d.w + x;
 }
-cv.addEventListener("mousemove", (ev) => { const p = pixelAt(ev); if (p >= 0) highlightPixel(p); });
+// Kein Hover auf dem Bild: Sonst waere es unmoeglich, ein Pixel in der Mitte
+// anzuklicken und dann mit der Maus in den Editor zu gelangen, ohne ein
+// anderes Pixel zu streifen. Ausgewaehlt wird nur per Klick.
 cv.addEventListener("click", (ev) => {
   const p = pixelAt(ev);
   if (p < 0) return;
