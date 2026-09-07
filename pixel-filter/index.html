@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the pixel filter</title>
+  <meta name="description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink, and see what happens at 255.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the pixel filter">
+  <meta property="og:description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink, and see what happens at 255.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/pixel-filter/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/pixel-filter/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .motifs { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 18px; flex-wrap: wrap; }
+    .motifs .mlabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .motifs button {
+      width: 52px; height: 52px; padding: 2px;
+      background: #14171a; border: 1px solid var(--gray-dark); border-radius: 6px;
+      cursor: pointer; line-height: 0;
+    }
+    .motifs button img { width: 100%; border-radius: 4px; filter: grayscale(1); }
+    .motifs button[aria-pressed="true"] { border-color: var(--blue); }
+    .motifs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+    .filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 18px 0 6px; }
+    .filters button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+
+    .rule {
+      font-family: var(--mono); text-align: center; color: var(--white);
+      font-size: 20px; margin: 10px 0 4px; min-height: 28px;
+    }
+    .rule .dim { color: var(--gray); }
+
+    .pair {
+      display: flex; gap: clamp(16px, 5vw, 56px); justify-content: center;
+      align-items: flex-start; flex-wrap: wrap; margin: 16px 0 6px;
+    }
+    .side { text-align: center; }
+    .side .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
+    .side canvas {
+      width: min(300px, 84vw); aspect-ratio: 1; image-rendering: pixelated;
+      border: 1px solid var(--gray-dark); border-radius: 8px; background: #000; display: block;
+    }
+
+    .controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
+    .controls .sep { color: var(--gray-dark); margin: 0 6px; }
+    .controls .mode { color: var(--gray); font-size: 13px; }
+    .controls button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    .controls button.ctrl.go { border-color: var(--gray-light); color: var(--white); }
+    .threshold { display: none; align-items: center; gap: 10px; justify-content: center; margin: 6px 0; color: var(--gray); font-size: 13px; }
+    .threshold.show { display: flex; }
+    .threshold input[type="range"] { width: min(260px, 60vw); accent-color: var(--blue); }
+    .threshold .val { font-family: var(--mono); color: var(--gray-light); }
+
+    /* the one pixel, worked out in the open */
+    .work {
+      font-family: var(--mono); font-size: 16px; line-height: 1.75;
+      border: 1px solid var(--gray-dark); border-radius: 8px;
+      padding: 14px 18px; margin: 18px auto 0; max-width: 560px;
+      color: var(--gray-light); min-height: 150px;
+    }
+    .work .head { color: var(--gray); font-size: 13px; font-family: var(--font); margin-bottom: 8px; }
+    .work .row { display: grid; grid-template-columns: 5.5em 1fr 4.5em; align-items: baseline; white-space: pre; }
+    .work .row .lab { color: var(--gray); font-size: 13px; }
+    .work .row .bits { letter-spacing: 0.35em; }
+    .work .row .dec { text-align: right; color: var(--gray); }
+    .work .row.result { border-top: 1px solid var(--gray-dark); color: var(--white); }
+    .work .carry { color: var(--yellow); }
+    .work .dropped { color: var(--red); text-decoration: line-through; }
+    .work .note { margin-top: 8px; font-family: var(--font); font-size: 14px; color: var(--gray); }
+    .work .note.warn { color: var(--red); }
+    .work .note.ok { color: var(--green); }
+    .work .idle { color: var(--gray-dark); font-family: var(--font); font-size: 14px; }
+
+    .counter {
+      font-family: var(--mono); text-align: center; color: var(--gray-light);
+      margin: 16px 0 4px; font-size: 15px; line-height: 1.7;
+    }
+    .counter .big { color: var(--white); font-size: 19px; }
+    .takeaway { color: var(--yellow); text-align: center; margin: 22px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the pixel filter</h1>
+    <p class="subtitle">a photo is a grid of numbers. a filter is the same small calculation on every one of them &mdash; do one by hand, then let the machine do the rest.</p>
+
+    <div class="motifs" id="motifs" role="group" aria-label="choose a picture">
+      <span class="mlabel">picture:</span>
+      <button data-m="parrot" aria-pressed="true"><img src="../assets/photos/parrot.png" alt="parrot"></button>
+      <button data-m="sunset" aria-pressed="false"><img src="../assets/photos/sunset.png" alt="sunset"></button>
+      <button data-m="lighthouse" aria-pressed="false"><img src="../assets/photos/lighthouse.png" alt="lighthouse"></button>
+    </div>
+
+    <div class="filters" id="filters" role="group" aria-label="choose a filter"></div>
+    <div class="threshold" id="threshold">
+      <span>threshold</span>
+      <input type="range" id="in-thr" min="0" max="255" value="128" aria-label="threshold">
+      <span class="val" id="rd-thr">128</span>
+    </div>
+    <div class="rule" id="rule"></div>
+
+    <div class="pair">
+      <div class="side">
+        <div class="clabel">before: 128 &times; 128 bytes</div>
+        <canvas id="cv-src" width="128" height="128"></canvas>
+      </div>
+      <div class="side">
+        <div class="clabel" id="lbl-out">after</div>
+        <canvas id="cv-out" width="128" height="128"></canvas>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl go" id="bt-step" type="button">step: one pixel</button>
+      <button class="ctrl go" id="bt-run" type="button">run: all the rest</button>
+      <button class="ctrl" id="bt-reset" type="button">reset</button>
+      <span class="sep">&middot;</span>
+      <span class="mode">at the edge (255 or 0):</span>
+      <button class="ctrl" id="bt-clamp" type="button" aria-pressed="true">clamp</button>
+      <button class="ctrl" id="bt-wrap" type="button" aria-pressed="false">wrap</button>
+    </div>
+
+    <div class="work" id="work"></div>
+
+    <div class="counter">
+      <div class="big" id="cnt-ops"></div>
+      <div id="cnt-gates"></div>
+    </div>
+
+    <div class="takeaway">the computer is not clever. it is fast and stubborn.</div>
+    <div style="color: var(--gray-dark); font-size: 12px; text-align: right;">photos: ai-generated (gpt-image-2)</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/logic-and-arithmetic.html">logik und arithmetik</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=2"></script>
+</body>
+</html>
