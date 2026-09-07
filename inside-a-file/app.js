@@ -109,6 +109,10 @@ function decodeBmp(b) {
 const state = { motif: "parrot", res: 16, bytes: null, original: null, decoded: null,
                 selected: -1, pending: null, textOpen: false };
 const photos = {};
+// Die Fotos sind fuer Folien auf schwarzem Grund erzeugt und im Ganzen
+// dunkel; fuer eine winzige Bitmap wird je Motiv ein heller,
+// kontrastreicher Ausschnitt genommen (x, y, Kantenlaenge im 256er-Bild).
+const CROP = { parrot: [40, 32, 128], sunset: [80, 48, 128], lighthouse: [0, 40, 128] };
 const cv = el("cv");
 const ctx = cv.getContext("2d");
 
@@ -129,7 +133,8 @@ async function buildFile() {
   const c = off.getContext("2d");
   c.imageSmoothingEnabled = true;
   c.imageSmoothingQuality = "high";
-  c.drawImage(im, 0, 0, n, n);
+  const [cx, cy, cs] = CROP[state.motif];
+  c.drawImage(im, cx, cy, cs, cs, 0, 0, n, n);
   const rgba = c.getImageData(0, 0, n, n).data;
   state.original = encodeBmp(rgba, n, n);
   state.bytes = new Uint8Array(state.original);
