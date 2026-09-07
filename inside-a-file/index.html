@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>inside a file</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .controls { display: flex; gap: 18px 28px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+    .controls .clabel { color: var(--gray); font-size: 13px; margin-right: 6px; }
+    .motifs { display: flex; gap: 8px; align-items: center; }
+    .motifs button {
+      width: 46px; height: 46px; padding: 2px; background: #14171a;
+      border: 1px solid var(--gray-dark); border-radius: 6px; cursor: pointer; line-height: 0;
+    }
+    .motifs button img { width: 100%; border-radius: 4px; }
+    .motifs button[aria-pressed="true"] { border-color: var(--blue); }
+    .seg { display: flex; gap: 8px; }
+    button.ctrl {
+      background: none; color: var(--white); border: 1px solid var(--gray-dark);
+      border-radius: 8px; padding: 7px 12px; font-family: var(--mono); font-size: 14px; cursor: pointer;
+    }
+    button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    button.ctrl:focus-visible, .motifs button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+    .pair { display: flex; gap: clamp(16px, 4vw, 40px); justify-content: center; align-items: flex-start; flex-wrap: wrap; margin: 22px 0 10px; }
+    .side { text-align: center; }
+    .side .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
+    .viewer { position: relative; width: min(320px, 84vw); }
+    .viewer canvas {
+      width: 100%; aspect-ratio: 1; border: 1px solid var(--gray-dark); border-radius: 8px;
+      background: #000; display: block; image-rendering: pixelated; cursor: crosshair;
+    }
+    .viewer .refuse {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      padding: 20px; text-align: center; color: var(--red); font-size: 14px;
+      background: rgba(0,0,0,0.85); border-radius: 8px;
+    }
+    .pixinfo { font-family: var(--mono); color: var(--gray-light); font-size: 13px; margin-top: 8px; min-height: 1.4em; }
+
+    .hexwrap { width: min(560px, 92vw); text-align: left; }
+    .hex {
+      font-family: var(--mono); font-size: 13px; line-height: 1.55;
+      max-height: 420px; overflow: auto; border: 1px solid var(--gray-dark); border-radius: 8px;
+      padding: 8px 10px; background: #0a0c0e;
+    }
+    .row { display: flex; gap: 0; white-space: nowrap; }
+    .row .off { color: var(--gray-dark); width: 4.2em; flex: none; user-select: none; }
+    .b {
+      display: inline-block; width: 2.05em; text-align: center; border-radius: 3px; cursor: pointer;
+      border: 1px solid transparent; color: var(--white);
+    }
+    .b.hdr { color: var(--gray-light); background: rgba(182, 190, 198, 0.18); }
+    .b.inf { color: var(--gray); }
+    .b.pix { color: var(--white); }
+    .b.pad { color: var(--gray-dark); }
+    .b.field { text-decoration: underline dotted var(--gray); text-underline-offset: 3px; }
+    .b.hl { border-color: var(--yellow); color: var(--yellow); }
+    .b.sel { background: var(--yellow); color: #000; }
+    .b:focus-visible { outline: 2px solid var(--blue); outline-offset: -1px; }
+    .b.edited { color: var(--red); }
+    .b.sel.edited { color: #000; }
+
+    .info { font-family: var(--mono); color: var(--gray-light); font-size: 13px; margin-top: 8px; min-height: 1.4em; }
+    .info .k { color: var(--yellow); }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--gray); font-size: 12px; margin-top: 8px; }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--gray-dark); }
+    .legend .l-hdr::before { background: rgba(182, 190, 198, 0.4); }
+    .legend .l-inf::before { background: #0a0c0e; }
+    .legend .l-pix::before { background: #fff; }
+    .legend .l-hl::before { border-color: var(--yellow); }
+
+    .tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+    .textview {
+      font-family: var(--mono); font-size: 13px; color: var(--gray-light); background: #0a0c0e;
+      border: 1px solid var(--gray-dark); border-radius: 8px; padding: 10px 12px; margin-top: 12px;
+      white-space: pre-wrap; word-break: break-all; line-height: 1.5;
+    }
+    .stats { font-family: var(--mono); text-align: center; color: var(--gray-light); font-size: 14px; margin-top: 16px; }
+    .hint { color: var(--gray); font-size: 13px; text-align: center; margin-top: 6px; }
+    .takeaway { color: var(--yellow); text-align: center; margin: 22px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>inside a file</h1>
+    <p class="subtitle">a real bitmap file, byte by byte. click a pixel to find its bytes, click a byte to find its pixel &mdash; then change a byte and watch the picture obey.</p>
+
+    <div class="controls">
+      <div class="motifs" id="motifs" role="group" aria-label="choose a picture">
+        <span class="clabel">picture:</span>
+        <button data-m="parrot" aria-pressed="true"><img src="../assets/photos/parrot.png" alt="parrot"></button>
+        <button data-m="sunset" aria-pressed="false"><img src="../assets/photos/sunset.png" alt="sunset"></button>
+        <button data-m="lighthouse" aria-pressed="false"><img src="../assets/photos/lighthouse.png" alt="lighthouse"></button>
+      </div>
+      <div class="seg" id="seg-res" role="group" aria-label="resolution">
+        <span class="clabel">pixels:</span>
+        <button class="ctrl" data-r="8" aria-pressed="false">8 &times; 8</button>
+        <button class="ctrl" data-r="16" aria-pressed="true">16 &times; 16</button>
+        <button class="ctrl" data-r="32" aria-pressed="false">32 &times; 32</button>
+      </div>
+    </div>
+
+    <div class="pair">
+      <div class="side">
+        <div class="clabel">what a viewer makes of the bytes</div>
+        <div class="viewer">
+          <canvas id="cv" width="256" height="256" aria-label="the decoded picture"></canvas>
+          <div class="refuse" id="refuse" hidden></div>
+        </div>
+        <div class="pixinfo" id="pixinfo">hover or click a pixel</div>
+        <div class="tools">
+          <button class="ctrl" id="btn-text" aria-pressed="false">open as text</button>
+          <button class="ctrl" id="btn-reset">reset file</button>
+        </div>
+      </div>
+      <div class="side hexwrap">
+        <div class="clabel">the bytes (a hex editor)</div>
+        <div class="hex" id="hex" tabindex="0" aria-label="hex view of the file"></div>
+        <div class="info" id="info">hover a byte</div>
+        <div class="legend">
+          <span class="l-hdr">file header</span>
+          <span class="l-inf">info header</span>
+          <span class="l-pix">pixel data</span>
+          <span class="l-hl">selected pixel</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="textview" id="textview" hidden></div>
+
+    <div class="stats" id="stats"></div>
+    <div class="hint">select a byte, then type two hex digits, or press + and &minus; to nudge it. arrow keys move. header bytes are underlined: hover them to see what they mean.</div>
+
+    <div class="takeaway">a file is a sequence of bytes. the header is the reading instruction; break it, and the viewer gives up. break a pixel, and only a pixel breaks.</div>
+    <div style="color: var(--gray-dark); font-size: 12px; text-align: right;">photos: ai-generated (gpt-image-2)</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/files.html">dateien</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>

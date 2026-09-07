@@ -27,7 +27,13 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **Drift Simulator** (Abtastung und Synchronisation, live): Sender legt eine Farbfolge in Zeitschlitze, die Empfängeruhr geht einstellbar falsch; Abtastpunkte wandern sichtbar, die Statistik zeigt den Versatz und die halbe-Schlitz-Grenze, eine zuschaltbare Sync-Marke richtet neu aus und kostet sichtbar Rate. Farben ohne Bit-Zuordnung (Priming-Regel).
 
+**Inside a File** (Dateien, live, 07.09.2026): eines der drei Fotomotive als echte 24-Bit-Bitmap mit 8×8, 16×16 oder 32×32 Pixeln (822 Bytes bei 16×16), rechts als Hex-Editor mit Positionsspalte, Dateikopf, Infokopf und Pixeldaten unterschieden, Kopffelder unterstrichen und beim Überfahren erklärt (Kennung, Dateigröße, Startposition, Breite, Höhe, Farbtiefe), links das Bild, das ein echter Dekoder aus genau diesen Bytes macht. Klick auf ein Pixel markiert seine drei Bytes (Blau, Grün, Rot, unterste Zeile zuerst), Klick auf ein Byte sein Pixel; ein Byte wird per Tastatur geändert (zwei Hexziffern oder + und −), das Bild folgt sofort. Kaputter Kopf: der Betrachter verweigert mit Begründung; falsche Breite: Streifen; „open as text“ zeigt die Bytes als Zeichensalat. Nachfolger der Hex-Editor-Folien aus dem alten Satz „Experiment 04: Images“.
+
 ## Die Kandidaten, nach Kurskonzepten
+
+### Verarbeitung: „the pixel filter" (geplant, 06.09.2026)
+
+Ein 128×128-Graustufenbild (Papagei, Sonnenuntergang, Leuchtturm) mit Filterknöpfen: `brighter +40`, `darker −40`, `invert`, `black & white` (Schwelle verschiebbar), `blend` mit dem zweiten Motiv; die Rechenzeile (`new = old + 40`) steht über dem Bild. Zwei Betriebsarten: `step` bearbeitet ein Pixel und zeigt es gelb markiert mit seiner Zahl, den acht Bits, der binären Addition samt Überträgen (bei invert das Bitkippen, bei s/w den Vergleich), dem Ergebnis und dem Zähler `additions: 1`; `run` macht den Rest in zwei Sekunden zeilenweise wie ein Scanner. Darunter die Größenordnung `16 384 additions · about 650 000 gate switches` (8 Volladdierer je Addition, etwa 5 Gatter je Volladdierer). Schalter `at 255: clamp / wrap`: bei wrap zeigt brighter schwarze Sprenkel in hellen Flächen, die Schrittansicht den neunten Übertrag rot durchgestrichen. Nicht enthalten: Farbbilder, Faltungsfilter (Fußnote „same idea, nine pixels at a time"), Schaltpläne. **Didaktischer Kern:** Verarbeitung ist dieselbe stupide Rechnung, sehr oft; deckt pc-009 bis pc-011 und macht pc-003/pc-007 anschaulich. Deck 12, Folie 22 und die Konzeptseite verlinken bereits auf `pixel-filter/`. **Aufwand: mittel. Priorität: hoch** (Deck 12 steht, der Link ist noch tot).
 
 ### Signal und Rauschen: „Unterscheidbarkeits-Labor"
 
