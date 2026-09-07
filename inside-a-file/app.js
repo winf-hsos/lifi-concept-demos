@@ -107,12 +107,12 @@ function decodeBmp(b) {
 
 // --- Zustand ---------------------------------------------------------------
 const state = { motif: "parrot", res: 16, bytes: null, original: null, decoded: null,
-                selected: -1, pending: null, textOpen: false };
+                selected: -1, pending: null };
 const photos = {};
 // Die Fotos sind fuer Folien auf schwarzem Grund erzeugt und im Ganzen
 // dunkel; fuer eine winzige Bitmap wird je Motiv ein heller,
 // kontrastreicher Ausschnitt genommen (x, y, Kantenlaenge im 256er-Bild).
-const CROP = { parrot: [40, 32, 128], sunset: [80, 48, 128], lighthouse: [0, 40, 128] };
+const CROP = { parrot: [40, 32, 112], sunset: [88, 64, 112], lighthouse: [0, 48, 112] };
 const cv = el("cv");
 const ctx = cv.getContext("2d");
 
@@ -226,7 +226,6 @@ function refresh() {
   const pixBytes = b.length - 54;
   el("stats").textContent = `${b.length} bytes = 14 file header + 40 info header + ${pixBytes} pixel data` +
     (d.error ? "" : ` (${d.w} × ${d.h} pixels × 3 bytes)`);
-  if (state.textOpen) renderText();
 }
 
 function drawPixelOutline() {
@@ -306,17 +305,6 @@ function setByte(i, v) {
   highlightPixel(p);
 }
 
-// --- Text-Ansicht ------------------------------------------------------------
-function renderText() {
-  const b = state.bytes;
-  let s = "";
-  for (let i = 0; i < b.length; i++) {
-    const v = b[i];
-    s += (v >= 32 && v < 127) ? String.fromCharCode(v) : (v >= 160 ? String.fromCharCode(v) : "·");
-  }
-  el("textview").textContent = "the same bytes, read as characters:\n" + s;
-}
-
 // --- Ereignisse ------------------------------------------------------------
 el("hex").addEventListener("click", (ev) => {
   const s = ev.target.closest(".b");
@@ -391,11 +379,4 @@ el("btn-reset").addEventListener("click", () => {
   refresh();
   el("info").textContent = "file restored";
 });
-el("btn-text").addEventListener("click", () => {
-  state.textOpen = !state.textOpen;
-  el("btn-text").setAttribute("aria-pressed", String(state.textOpen));
-  el("textview").hidden = !state.textOpen;
-  if (state.textOpen) renderText();
-});
-
 buildFile();
