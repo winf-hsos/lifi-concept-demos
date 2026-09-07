@@ -57,7 +57,7 @@
     .b.pix { color: var(--white); }
     .b.pad { color: var(--gray-dark); }
     .b.field { text-decoration: underline dotted var(--gray); text-underline-offset: 3px; }
-    .b.hl { border-color: var(--yellow); color: var(--yellow); }
+    .b.hl { border-color: var(--yellow); color: var(--yellow); background: rgba(255, 210, 63, 0.18); }
     .b.sel { background: var(--yellow); color: #000; }
     .b:focus-visible { outline: 2px solid var(--blue); outline-offset: -1px; }
     .b.edited { color: var(--red); }
@@ -73,6 +73,11 @@
     .legend .l-hl::before { border-color: var(--yellow); }
 
     .tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+    .textview {
+      font-family: var(--mono); font-size: 13px; color: var(--gray-light); background: #0a0c0e;
+      border: 1px solid var(--gray-dark); border-radius: 8px; padding: 10px 12px; margin-top: 12px;
+      white-space: pre-wrap; word-break: break-all; line-height: 1.5;
+    }
     .stats { font-family: var(--mono); text-align: center; color: var(--gray-light); font-size: 14px; margin-top: 16px; }
     .hint { color: var(--gray); font-size: 13px; text-align: center; margin-top: 6px; }
     .takeaway { color: var(--yellow); text-align: center; margin: 22px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
@@ -112,6 +117,7 @@
         </div>
         <div class="pixinfo" id="pixinfo">hover or click a pixel</div>
         <div class="tools">
+          <button class="ctrl" id="btn-text" aria-pressed="false">open as text</button>
           <button class="ctrl" id="btn-reset">reset file</button>
         </div>
       </div>
@@ -128,6 +134,8 @@
       </div>
     </div>
 
+    <div class="textview" id="textview" hidden></div>
+
     <div class="stats" id="stats"></div>
     <div class="hint">select a byte, then type two hex digits, or press + and &minus; to nudge it. arrow keys move. header bytes are underlined: hover them to see what they mean.</div>
 
@@ -141,6 +149,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
