@@ -59,6 +59,13 @@
     }
     .side { text-align: center; }
     .side .clabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
+    .side .frame { position: relative; }
+    .side .placeholder {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; color: var(--gray-dark); font-size: 14px; line-height: 1.5; padding: 20px;
+      pointer-events: none;
+    }
+    .side .placeholder[hidden] { display: none; }
     .side canvas {
       width: min(300px, 84vw); aspect-ratio: 1; image-rendering: pixelated;
       border: 1px solid var(--gray-dark); border-radius: 8px; background: #000; display: block;
@@ -150,7 +157,10 @@
       </div>
       <div class="side">
         <div class="clabel" id="lbl-out">after</div>
-        <canvas id="cv-out" width="128" height="128"></canvas>
+        <div class="frame">
+          <canvas id="cv-out" width="128" height="128"></canvas>
+          <div class="placeholder" id="placeholder">the processed picture appears here,<br>pixel by pixel</div>
+        </div>
       </div>
     </div>
 
@@ -183,6 +193,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

@@ -139,15 +139,16 @@ function computePixel(i) {
 }
 
 // --- Zeichnen ----------------------------------------------------------------
-function paint(cv, data, dim, upto, mark) {
+function paint(cv, data, upto, mark) {
   const ctx = cv.getContext("2d");
   const img = ctx.createImageData(N, N);
   const d = img.data;
   for (let i = 0; i < TOTAL; i++) {
-    const done = i < upto;
-    const src = done ? data : dim;
-    const shift = done ? 0 : 2;          // noch nicht gerechnet: das Original, stark abgedunkelt
-    d[4 * i] = src[3 * i] >> shift; d[4 * i + 1] = src[3 * i + 1] >> shift; d[4 * i + 2] = src[3 * i + 2] >> shift;
+    if (i < upto) {
+      d[4 * i] = data[3 * i]; d[4 * i + 1] = data[3 * i + 1]; d[4 * i + 2] = data[3 * i + 2];
+    } else {
+      d[4 * i] = d[4 * i + 1] = d[4 * i + 2] = 20;   // noch nicht gerechnet: leer, ohne Vorgriff aufs Ergebnis
+    }
     d[4 * i + 3] = 255;
   }
   if (mark != null) {                      // das aktuelle Pixel: ein gelbes Kreuz
@@ -164,8 +165,9 @@ function paint(cv, data, dim, upto, mark) {
 
 function paintAll() {
   const mark = state.last ? state.last.index : null;
-  paint(el("cv-src"), state.src, state.src, TOTAL, mark);
-  paint(el("cv-out"), state.out, state.src, state.next, mark);
+  paint(el("cv-src"), state.src, TOTAL, mark);
+  paint(el("cv-out"), state.out, state.next, mark);
+  el("placeholder").hidden = state.next > 0;
 }
 
 // --- Die Rechnung offenlegen -------------------------------------------------
