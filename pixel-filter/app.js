@@ -264,6 +264,14 @@ function explain(p) {
   }
   for (const r of rows) table += `<tr class="${r.cls}"><td class="lab">${r.lab}</td>${r.cells.join("")}</tr>`;
   table += "</table>";
+  // Die Schaltung, die gerade arbeitet, im Gate Lab mit genau diesen Werten
+  const c0 = p.chans[0];
+  const lab = (query, text) => `<div class="note">see the circuit at work: <a href="../gate-lab/?${query}" target="_blank" rel="noopener">${text}</a></div>`;
+  if (f.op === "add") notes.push(lab(`circuit=byte-adder&a=${c0.old}&b=${PLUS}`, `the byte adder with ${c0.old} + ${PLUS}`));
+  else if (f.op === "blend") notes.push(lab(`circuit=byte-adder&a=${c0.old}&b=${c0.other}`, `the byte adder with ${c0.old} + ${c0.other}`));
+  else if (f.op === "not") notes.push(lab(`circuit=gates&gate=not&a=${c0.old & 1}`, "the not-gate"));
+  else if (f.op === "cmp") notes.push(lab(`circuit=compare&a=${rgb ? p.lum : c0.old}&b=${state.threshold}`, `the comparator with ${rgb ? p.lum : c0.old} ≥ ${state.threshold}`));
+  else if (f.op === "sub") notes.push(lab(`circuit=compare&a=${c0.old}&b=${PLUS}`, `the comparator: is ${c0.old} ≥ ${PLUS}?`));
   el("work").innerHTML = html + table + notes.join("");
 }
 

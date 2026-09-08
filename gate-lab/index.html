@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the gate lab</title>
+  <meta name="description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, make two gates remember a bit, then build the circuits yourself by dropping gates into place.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the gate lab">
+  <meta property="og:description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, make two gates remember a bit, then build the circuits yourself by dropping gates into place.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/gate-lab/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/gate-lab/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    /* stations */
+    .stations { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 6px 0 4px; }
+    .stations button.ctrl { padding: 6px 12px; font-size: 14px; }
+    .stations button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    .station-hint { text-align: center; color: var(--gray); font-size: 14px; margin: 8px auto 0; max-width: 720px; line-height: 1.5; min-height: 22px; }
+
+    /* the bench: inputs on the left, the circuit in the middle, outputs on the right */
+    .bench { margin: 16px auto 0; max-width: 860px; }
+    .bench svg { width: 100%; height: auto; display: block; }
+
+    /* switches and lamps are real buttons / live regions */
+    .sw {
+      font-family: var(--mono); font-size: 15px; color: var(--gray-light);
+      background: #101316; border: 1px solid var(--gray-dark); border-radius: 6px;
+      width: 44px; height: 34px; cursor: pointer; padding: 0;
+    }
+    .sw[aria-pressed="true"] { background: var(--yellow); color: #000; border-color: var(--yellow); }
+    .sw:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .sw:disabled { opacity: 0.6; cursor: default; }
+    .sw.small { width: 34px; height: 30px; font-size: 14px; }
+
+    .row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+    .row .rl { color: var(--gray); font-size: 13px; min-width: 96px; text-align: right; }
+    .row .rv { font-family: var(--mono); color: var(--gray-light); font-size: 14px; min-width: 96px; }
+    .bits { display: flex; gap: 4px; }
+
+    /* truth table */
+    .truth { border-collapse: collapse; margin: 14px auto 0; font-family: var(--mono); font-size: 15px; }
+    .truth th { font-weight: normal; color: var(--gray); font-family: var(--font); font-size: 12px; padding: 2px 12px; }
+    .truth td { padding: 2px 12px; text-align: center; color: var(--gray-light); border-top: 1px solid #1c2024; }
+    .truth tr.now td { color: var(--white); background: #14171a; }
+    .truth td.on { color: var(--yellow); }
+    .truth td.miss { color: var(--red); }
+    .truth td.hit { color: var(--green); }
+
+    /* gate palette and slots for the build station */
+    .palette { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+    .chip {
+      font-family: var(--mono); font-size: 14px; color: var(--gray-light);
+      background: #101316; border: 1px solid var(--gray-dark); border-radius: 6px;
+      padding: 8px 14px; cursor: grab; user-select: none;
+    }
+    .chip[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    .chip:active { cursor: grabbing; }
+    .slot-hint { text-align: center; color: var(--gray-dark); font-size: 12px; }
+    .verdict { text-align: center; font-size: 15px; margin-top: 10px; min-height: 22px; }
+    .verdict.ok { color: var(--green); }
+
+    .note { text-align: center; color: var(--gray); font-size: 14px; margin: 12px auto 0; max-width: 720px; line-height: 1.5; }
+    .note a.link { color: var(--blue); }
+    .takeaway { color: var(--yellow); text-align: center; margin: 22px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the gate lab</h1>
+    <p class="subtitle">switches in, lamps out. every circuit here is nothing but a few gates and wires &mdash; flip the switches and follow the current.</p>
+
+    <div class="stations" id="stations" role="group" aria-label="choose a circuit"></div>
+    <div class="station-hint" id="hint"></div>
+
+    <div id="stage"></div>
+
+    <div class="takeaway" id="takeaway">a gate does not know what a number is. wire enough of them together and they add anyway.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/logic-and-arithmetic.html">logik und arithmetik</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>
