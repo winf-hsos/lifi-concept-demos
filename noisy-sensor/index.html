@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the noisy sensor · lifi concept demos</title>
+  <meta name="description" content="Take one reading, then a series: watch the distribution emerge and see averages become calmer while individual readings keep jumping.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the noisy sensor">
+  <meta property="og:description" content="One reading is a draw. A series reveals the distribution.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/noisy-sensor/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/noisy-sensor/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    main { width: min(1080px, 100% - 32px); }
+    .lab { border: 1px solid var(--gray-dark); border-radius: 10px; padding: 18px 22px 20px; }
+    .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+    .controls .label { color: var(--gray); font-size: 14px; margin-left: 12px; }
+    .controls .label:first-child { margin-left: 0; }
+    button.ctrl.primary { color: var(--bg); background: var(--yellow); border-color: var(--yellow); font-weight: 500; }
+    button.ctrl[aria-pressed="true"] { color: var(--white); border-color: var(--blue); box-shadow: inset 0 -2px 0 var(--blue); }
+    button.ctrl.primary[aria-pressed="true"] { color: var(--bg); border-color: var(--yellow); box-shadow: none; }
+    .plot { position: relative; height: 230px; border-left: 1px solid var(--gray-dark); border-bottom: 1px solid var(--gray-dark); overflow: hidden; }
+    .plot::before { content: ""; position: absolute; left: 0; right: 0; top: 48%; height: 1px; background: var(--gray-dark); }
+    .tick { position: absolute; bottom: 6px; color: var(--gray); font: 12px var(--mono); transform: translateX(-50%); }
+    .tick.start { transform: none; }
+    .tick.end { transform: translateX(-100%); }
+    .point { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--gray-light); transform: translate(-50%, -50%); transition: left 180ms ease, top 180ms ease; }
+    .point.old { background: var(--gray); }
+    .point.current { width: 16px; height: 16px; background: var(--yellow); box-shadow: 0 0 18px rgb(255 210 63 / .35); }
+    .mean-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--blue); transform: translateX(-50%); display: none; }
+    .mean-label { position: absolute; top: 8px; color: var(--blue); font: 13px var(--mono); transform: translateX(8px); display: none; }
+    .histogram { height: 86px; display: grid; grid-template-columns: repeat(16, 1fr); align-items: end; gap: 3px; margin: 14px 0 0; }
+    .bin { min-height: 1px; background: var(--gray-dark); transition: height 180ms ease; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+    .stat { border-top: 1px solid var(--gray-dark); padding-top: 8px; }
+    .stat .name { color: var(--gray); font-size: 13px; }
+    .stat .value { color: var(--white); font: 20px var(--mono); margin-top: 3px; }
+    .stat.accent .value { color: var(--blue); }
+    .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--gray); font-size: 16px; }
+    .takeaway { color: var(--yellow); font-size: 20px; margin: 20px 2px 0; }
+    .simulation-note { color: var(--gray); font-size: 13px; margin-top: 12px; }
+    body.embed main { width: min(1080px, 100% - 16px); }
+    body.embed .lab { border: 0; padding: 8px 10px 4px; }
+    body.embed .plot { height: 210px; }
+    body.embed .histogram { height: 70px; }
+    body.embed .controls { margin-bottom: 10px; }
+    @media (max-width: 720px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .plot { height: 190px; }
+      .controls .label { width: 100%; margin-left: 0; margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt · concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the noisy sensor</h1>
+    <p class="subtitle">one reading is a draw. a series reveals the distribution.</p>
+
+    <section class="lab" aria-label="simulated sensor measurement lab">
+      <div class="controls">
+        <button class="ctrl primary" id="measure" type="button">measure</button>
+        <span class="label">average n readings</span>
+        <button class="ctrl average" type="button" data-n="1" aria-pressed="true">1</button>
+        <button class="ctrl average" type="button" data-n="5" aria-pressed="false">5</button>
+        <button class="ctrl average" type="button" data-n="10" aria-pressed="false">10</button>
+        <button class="ctrl" id="reset" type="button">reset</button>
+        <span class="hint">space / m · measure &nbsp; r · reset &nbsp; 1 / 5 / 0 · average</span>
+      </div>
+
+      <div class="plot" id="plot" aria-label="measurement values from 170 to 230">
+        <div class="empty" id="empty">press measure</div>
+        <div class="mean-line" id="mean-line"></div>
+        <div class="mean-label" id="mean-label">mean</div>
+        <span class="tick start" style="left: 0%">170</span>
+        <span class="tick" style="left: 25%">185</span>
+        <span class="tick" style="left: 50%">200</span>
+        <span class="tick" style="left: 75%">215</span>
+        <span class="tick end" style="left: 100%">230</span>
+      </div>
+      <div class="histogram" id="histogram" aria-hidden="true"></div>
+
+      <div class="stats" aria-live="polite">
+        <div class="stat"><div class="name">outputs</div><div class="value" id="count">0</div></div>
+        <div class="stat"><div class="name">current</div><div class="value" id="current">—</div></div>
+        <div class="stat accent"><div class="name">mean</div><div class="value" id="mean">—</div></div>
+        <div class="stat"><div class="name">min … max</div><div class="value" id="range">—</div></div>
+      </div>
+
+      <p class="simulation-note embed-hide">simulated readings — your setup supplies the real distribution.</p>
+    </section>
+
+    <div class="takeaway">one reading is a guess. a series is evidence.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/measurement-and-experiments.html">measurement and experiments</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>
