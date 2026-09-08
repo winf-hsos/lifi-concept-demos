@@ -398,5 +398,24 @@ document.addEventListener("keydown", (ev) => {
   else if (ev.key >= "1" && ev.key <= "5") filt.querySelectorAll("button")[Number(ev.key) - 1].click();
 });
 
+// --- Vorbelegung ueber die Adresse ------------------------------------------
+// ?picture=parrot|sunset|lighthouse  ?mode=grey|rgb  ?filter=brighter|darker|invert|bw|blend
+// ?edge=clamp|wrap  ?threshold=0..255  (dazu ?embed=1 fuer die Folie: dann ohne Einstellzeile)
+function applyParams() {
+  const q = new URLSearchParams(location.search);
+  if (MOTIFS.includes(q.get("picture"))) state.motif = q.get("picture");
+  if (["grey", "rgb"].includes(q.get("mode"))) state.mode = q.get("mode");
+  const fi = FILTERS.findIndex((f) => f.key === q.get("filter"));
+  if (fi >= 0) state.filter = fi;
+  if (["clamp", "wrap"].includes(q.get("edge"))) state.clamp = q.get("edge") === "clamp";
+  const t = Number(q.get("threshold"));
+  if (q.has("threshold") && Number.isFinite(t)) { state.threshold = Math.max(0, Math.min(255, Math.floor(t))); el("in-thr").value = String(state.threshold); el("rd-thr").textContent = String(state.threshold); }
+  el("motifs").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.m === state.motif ? "true" : "false"));
+  el("modes").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === state.mode ? "true" : "false"));
+  filt.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === state.filter ? "true" : "false"));
+  el("bt-clamp").setAttribute("aria-pressed", state.clamp ? "true" : "false");
+  el("bt-wrap").setAttribute("aria-pressed", state.clamp ? "false" : "true");
+}
+
 // --- Start -------------------------------------------------------------------
-Promise.all(MOTIFS.map(loadMotif)).then(reset);
+Promise.all(MOTIFS.map(loadMotif)).then(() => { applyParams(); reset(); });
