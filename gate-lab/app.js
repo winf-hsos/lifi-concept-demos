@@ -13,6 +13,8 @@
  *   compare      a >= b als Addition: a + (255 - b) + 1, der neunte
  *                Uebertrag ist die Antwort
  *   flip-flop    zwei ueber Kreuz verbundene NOR-Gatter merken sich ein Bit
+ *   d-latch      d und store werden mit zwei AND und einem NOT zu set und
+ *                reset fuer dieses Flip-Flop: der Baustein des Registers
  *   register     acht davon, ein Byte, das bleibt, bis "store" kommt
  *
  * Alles laeuft ueber eine kleine Netzliste: Gatter lesen Netze, schreiben
@@ -132,7 +134,7 @@ function bench(c, nets, onToggle) {
 function readout(html) {
   const r = document.createElement("div"); r.className = "readout"; r.innerHTML = html; return r;
 }
-const SMALL = { a: "ia", b: "ib", c: "cin", s: "s", r: "r", store: "store" };   // Netz -> Zustandsfeld
+const SMALL = { a: "ia", b: "ib", c: "cin", s: "s", r: "r", store: "store", d: "d" };   // Netz -> Zustandsfeld
 const flipSmall = (net) => { state[SMALL[net]] = 1 - state[SMALL[net]]; render(); };
 
 // --- Bausteine der Oberflaeche ----------------------------------------------
@@ -184,12 +186,13 @@ const state = {
   ia: num("a", 1, 1), ib: num("b", 1, 1),           // Bits fuer die Kleinschaltungen
   s: 0, r: 0, ff: { q: 0, qn: 1 },                   // Flip-Flop: Netze bleiben erhalten, Start bei q = 0
   regD: num("a", 178), regQ: num("b", 0), store: 0,   // store ist ein Pegel: solange 1, folgt q dem Eingang
+  d: 1, dl: { q: 0, qn: 1 },                          // D-Latch: Eingangsbit und gehaltene Netze
 };
 if (q.get("circuit") === "full-adder" && q.has("a")) { state.ia = num("a", 1, 1); state.ib = num("b", 1, 1); }
 
 const STATIONS = [
   ["gates", "gates"], ["half-adder", "half adder"], ["full-adder", "full adder"], ["byte-adder", "byte adder"],
-  ["compare", "compare"], ["flip-flop", "flip-flop"], ["register", "register"],
+  ["compare", "compare"], ["flip-flop", "flip-flop"], ["d-latch", "d latch"], ["register", "register"],
 ];
 
 function setUrl() {
@@ -395,11 +398,44 @@ function renderFlipFlop(stage) {
   note(stage, "no clock, no memory chip: the bit lives in the loop between the two gates, as long as the power stays on. this is one bit of ram. see the register for eight of them.");
 }
 
+// --- D-Latch: der Baustein des Registers -------------------------------------
+function dLatchCircuit() {
+  return {
+    w: 760, h: 230, aria: "d latch: two and gates and a not in front of the flip-flop",
+    ports: [{ net: "d", x: 80, y: 60, label: "d" }, { net: "store", x: 80, y: 170, label: "store" }],
+    gates: [{ id: "n", type: "not", x: 150, y: 30, in: ["d"], out: "dn" },
+            { id: "ar", type: "and", x: 280, y: 30, in: ["dn", "store"], out: "reset" },
+            { id: "as", type: "and", x: 280, y: 140, in: ["d", "store"], out: "set" },
+            { id: "n1", type: "nor", x: 480, y: 30, in: ["reset", "qn"], out: "q" },
+            { id: "n2", type: "nor", x: 480, y: 150, in: ["q", "set"], out: "qn" }],
+    wires: [{ net: "d", pts: [[98, 60], [120, 60], [120, 50], [150, 50]] }, { net: "d", pts: [[120, 60], [120, 150], [280, 150]] },
+            { net: "dn", pts: [[198, 50], [240, 50], [240, 40], [280, 40]] },
+            { net: "store", pts: [[98, 170], [220, 170], [220, 60], [280, 60]] }, { net: "store", pts: [[220, 170], [280, 170]] },
+            { net: "reset", pts: [[336, 50], [420, 50], [420, 40], [480, 40]] },
+            { net: "set", pts: [[336, 160], [420, 160], [420, 180], [480, 180]] },
+            { net: "q", pts: [[536, 50], [650, 50]] }, { net: "q", pts: [[590, 50], [590, 100], [450, 130], [450, 160], [480, 160]] },
+            { net: "qn", pts: [[536, 170], [650, 170]] }, { net: "qn", pts: [[590, 170], [590, 120], [450, 90], [450, 60], [480, 60]] }],
+    dots: [[120, 60, "d"], [220, 170, "store"], [590, 50, "q"], [590, 170, "qn"]],
+    lamps: [{ net: "q", x: 661, y: 50, label: "q (the bit)" }, { net: "qn", x: 661, y: 170, label: "not q" }],
+  };
+}
+
+function renderDLatch(stage) {
+  const c = dLatchCircuit();
+  state.dl = simulate(c, { d: state.d, store: state.store }, state.dl);
+  el("hint").textContent = "the building block of the register. d is the bit, store says when to take it: two and-gates and a not turn them into set and reset for the flip-flop from the last station. store off, and neither set nor reset can reach it.";
+  stage.appendChild(bench(c, state.dl, flipSmall));
+  stage.appendChild(readout(state.store
+    ? `store = 1: ${state.d ? "set" : "reset"} is on, q follows d → q = ${state.dl.q}`
+    : `store = 0: set and reset are both 0, q holds ${state.dl.q}`));
+  note(stage, "this is what sits inside each block of the register: the same two nor gates, with a doorman in front. the store wire is the doorman.");
+}
+
 // --- Register ----------------------------------------------------------------
 function renderRegister(stage) {
   // Pegelgesteuert: solange store = 1, uebernimmt das Register den Eingang laufend
   if (state.store) state.regQ = state.regD;
-  el("hint").textContent = "eight flip-flops side by side hold one byte. store is just another wire: while it is 1, the lamps follow the input switches; switch it to 0, and the byte is frozen, whatever you do to the switches afterwards.";
+  el("hint").textContent = "eight d latches side by side hold one byte, each one the block from the last station. store is just another wire: while it is 1, the lamps follow the input switches; switch it to 0, and the byte is frozen, whatever you do to the switches afterwards.";
   stage.appendChild(bitRow("input d", state.regD, (v) => { state.regD = v; render(); }));
   const W = 900, boxW = 72, gap = 26, x0 = 60;    // rechts Platz fuer den store-Schalter
   let s = `<svg viewBox="0 0 ${W} 215" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="8-bit register">`;
@@ -411,7 +447,7 @@ function renderRegister(stage) {
     s += wire([[x + 36, 20], [x + 36, 60]], d) + `<text x="${x + 36}" y="14" text-anchor="middle" font-size="11" font-family="Roboto Mono, monospace" fill="${d ? Y : GR}">d${i}=${d}</text>`;
     s += wire([[x + 36, 132], [x + 36, 114]], state.store) + dot(x + 36, 132, state.store);
     s += `<rect x="${x}" y="60" width="${boxW}" height="54" rx="7" fill="#0b0d10" stroke="${qv ? GL : G}" stroke-width="1.5"/>` +
-         `<text x="${x + boxW / 2}" y="84" text-anchor="middle" font-size="12" font-family="Roboto Mono, monospace" fill="${GL}">flip-flop</text>` +
+         `<text x="${x + boxW / 2}" y="84" text-anchor="middle" font-size="12" font-family="Roboto Mono, monospace" fill="${GL}">d latch</text>` +
          `<text x="${x + boxW / 2}" y="102" text-anchor="middle" font-size="10" font-family="Arial, sans-serif" fill="${G}">bit ${i}</text>`;
     s += wire([[x + 8, 114], [x + 8, 150]], qv) + lamp(x + 8, 163, qv, `q${i}`);
   }
@@ -448,14 +484,14 @@ function render() {
   const stage = el("stage"); stage.innerHTML = "";
   ({ "gates": () => renderGates(stage), "half-adder": () => renderSmallAdder(stage, "half"), "full-adder": () => renderSmallAdder(stage, "full"),
      "byte-adder": () => renderByte(stage, false), "compare": () => renderByte(stage, true), "flip-flop": () => renderFlipFlop(stage),
-     "register": () => renderRegister(stage) }[state.station] || (() => renderGates(stage)))();
+     "d-latch": () => renderDLatch(stage), "register": () => renderRegister(stage) }[state.station] || (() => renderGates(stage)))();
   setUrl();
 }
 
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
-  if (ev.key >= "1" && ev.key <= "7") { state.station = STATIONS[Number(ev.key) - 1][0]; render(); }
+  if (ev.key >= "1" && ev.key <= "8") { state.station = STATIONS[Number(ev.key) - 1][0]; render(); }
 });
 
 render();
