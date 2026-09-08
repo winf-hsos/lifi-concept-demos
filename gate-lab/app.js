@@ -415,7 +415,9 @@ function renderRegister(stage) {
          `<text x="${x + boxW / 2}" y="102" text-anchor="middle" font-size="10" font-family="Arial, sans-serif" fill="${G}">bit ${i}</text>`;
     s += wire([[x + 8, 114], [x + 8, 150]], qv) + lamp(x + 8, 163, qv, `q${i}`);
   }
-  s += port(xr + 34, 132, state.store, "store", "store");
+  // Schalter ohne Beschriftung links (dort laeuft der Draht), der Name steht darunter
+  s += port(xr + 34, 132, state.store, "", "store");
+  s += `<text x="${xr + 34}" y="158" text-anchor="middle" font-family="Roboto Mono, monospace" font-size="12" fill="${GR}">store</text>`;
   s += "</svg>";
   const bn = document.createElement("div"); bn.className = "bench"; bn.innerHTML = s;
   bn.querySelectorAll(".sw-port").forEach((g) => {
