@@ -132,7 +132,7 @@ function bench(c, nets, onToggle) {
 function readout(html) {
   const r = document.createElement("div"); r.className = "readout"; r.innerHTML = html; return r;
 }
-const SMALL = { a: "ia", b: "ib", c: "cin", s: "s", r: "r" };   // Netz -> Zustandsfeld
+const SMALL = { a: "ia", b: "ib", c: "cin", s: "s", r: "r", store: "store" };   // Netz -> Zustandsfeld
 const flipSmall = (net) => { state[SMALL[net]] = 1 - state[SMALL[net]]; render(); };
 
 // --- Bausteine der Oberflaeche ----------------------------------------------
@@ -183,7 +183,7 @@ const state = {
   a: num("a", 178), b: num("b", 40), cin: num("c", 0, 1),
   ia: num("a", 1, 1), ib: num("b", 1, 1),           // Bits fuer die Kleinschaltungen
   s: 0, r: 0, ff: { q: 0, qn: 1 },                   // Flip-Flop: Netze bleiben erhalten, Start bei q = 0
-  regD: num("a", 178), regQ: num("b", 0),
+  regD: num("a", 178), regQ: num("b", 0), store: 0,   // store ist ein Pegel: solange 1, folgt q dem Eingang
 };
 if (q.get("circuit") === "full-adder" && q.has("a")) { state.ia = num("a", 1, 1); state.ib = num("b", 1, 1); }
 
@@ -397,27 +397,36 @@ function renderFlipFlop(stage) {
 
 // --- Register ----------------------------------------------------------------
 function renderRegister(stage) {
-  el("hint").textContent = "eight flip-flops side by side hold one byte. set the input switches, press store: the lamps take the byte and keep it, whatever you do to the switches afterwards.";
+  // Pegelgesteuert: solange store = 1, uebernimmt das Register den Eingang laufend
+  if (state.store) state.regQ = state.regD;
+  el("hint").textContent = "eight flip-flops side by side hold one byte. store is just another wire: while it is 1, the lamps follow the input switches; switch it to 0, and the byte is frozen, whatever you do to the switches afterwards.";
   stage.appendChild(bitRow("input d", state.regD, (v) => { state.regD = v; render(); }));
-  const row = document.createElement("div"); row.className = "row";
-  const b = document.createElement("button"); b.type = "button"; b.className = "ctrl"; b.textContent = "store";
-  b.addEventListener("click", () => { state.regQ = state.regD; render(); });
-  row.appendChild(b);
-  const rv = document.createElement("span"); rv.className = "rv wide"; rv.textContent = state.regD === state.regQ ? "stored byte matches the input" : "input changed, register still holds the old byte"; row.appendChild(rv);
-  stage.appendChild(row);
   const W = 860, boxW = 72, gap = 26, x0 = 60;
-  let s = `<svg viewBox="0 0 ${W} 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="8-bit register">`;
+  let s = `<svg viewBox="0 0 ${W} 215" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="8-bit register">`;
+  // die Speicherleitung: ein Schalter rechts, ein Draht in jeden Block
+  const xr = x0 + 8 * (boxW + gap) - gap;
+  s += wire([[x0 - 10, 132], [xr + 4, 132]], state.store);
   for (let k = 0; k < 8; k++) {
     const i = 7 - k, x = x0 + k * (boxW + gap), d = (state.regD >> i) & 1, qv = (state.regQ >> i) & 1;
     s += wire([[x + 36, 20], [x + 36, 60]], d) + `<text x="${x + 36}" y="14" text-anchor="middle" font-size="11" font-family="Roboto Mono, monospace" fill="${d ? Y : GR}">d${i}=${d}</text>`;
+    s += wire([[x + 36, 132], [x + 36, 114]], state.store) + dot(x + 36, 132, state.store);
     s += `<rect x="${x}" y="60" width="${boxW}" height="54" rx="7" fill="#0b0d10" stroke="${qv ? GL : G}" stroke-width="1.5"/>` +
          `<text x="${x + boxW / 2}" y="84" text-anchor="middle" font-size="12" font-family="Roboto Mono, monospace" fill="${GL}">flip-flop</text>` +
          `<text x="${x + boxW / 2}" y="102" text-anchor="middle" font-size="10" font-family="Arial, sans-serif" fill="${G}">bit ${i}</text>`;
-    s += wire([[x + 36, 114], [x + 36, 145]], qv) + lamp(x + 36, 158, qv, `q${i}`);
+    s += wire([[x + 8, 114], [x + 8, 150]], qv) + lamp(x + 8, 163, qv, `q${i}`);
   }
+  s += port(xr + 34, 132, state.store, "store", "store");
   s += "</svg>";
-  const bn = document.createElement("div"); bn.className = "bench"; bn.innerHTML = s; stage.appendChild(bn);
-  stage.appendChild(readout(`register holds ${bits(state.regQ)}₂ = ${state.regQ}`));
+  const bn = document.createElement("div"); bn.className = "bench"; bn.innerHTML = s;
+  bn.querySelectorAll(".sw-port").forEach((g) => {
+    const flip = () => flipSmall(g.dataset.net);
+    g.addEventListener("click", flip);
+    g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); flip(); } });
+  });
+  stage.appendChild(bn);
+  stage.appendChild(readout(state.store
+    ? `store = 1: the register follows the input, ${bits(state.regQ)}₂ = ${state.regQ}`
+    : `store = 0: the register holds ${bits(state.regQ)}₂ = ${state.regQ}` + (state.regD !== state.regQ ? " while the input already says " + state.regD : "")));
   note(stage, "a cpu has a few dozen of these; your pixel's byte sits in one while it is being added to. the store signal is what a clock provides, tick after tick.");
 }
 
