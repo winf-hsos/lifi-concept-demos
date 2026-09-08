@@ -23,24 +23,24 @@
 // Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
 if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
 
-// Attribute: [glasses, hat, beard, curly, earrings, bowtie], hair: r/b/g/d
+// Attribute: [glasses, hat, beard, curly, earrings, bowtie], hair: r/b/g/d, f: weiblich (8 von 16: die perfekte Halbierung)
 const CHARS = [
-  { name: "mia",   a: [1, 1, 0, 1, 0, 0], hair: "r" },
-  { name: "omar",  a: [1, 0, 1, 0, 0, 0], hair: "d" },
-  { name: "lena",  a: [1, 0, 0, 1, 1, 0], hair: "b" },
-  { name: "ravi",  a: [1, 1, 0, 0, 0, 0], hair: "d" },
-  { name: "finn",  a: [1, 0, 1, 1, 0, 0], hair: "b" },
-  { name: "aisha", a: [1, 1, 0, 0, 1, 0], hair: "d" },
-  { name: "jonas", a: [1, 0, 0, 1, 0, 1], hair: "g" },
-  { name: "zoe",   a: [1, 0, 0, 0, 0, 0], hair: "d" },
-  { name: "ines",  a: [0, 1, 0, 1, 1, 0], hair: "g" },
-  { name: "malik", a: [0, 0, 1, 0, 0, 0], hair: "d" },
-  { name: "sofia", a: [0, 0, 0, 1, 0, 0], hair: "d" },
-  { name: "ben",   a: [0, 1, 0, 0, 0, 1], hair: "d" },
-  { name: "karim", a: [0, 0, 1, 1, 0, 0], hair: "d" },
-  { name: "yuki",  a: [0, 0, 0, 0, 1, 0], hair: "d" },
-  { name: "elif",  a: [0, 1, 0, 1, 0, 0], hair: "d" },
-  { name: "noah",  a: [0, 0, 0, 0, 1, 1], hair: "d" },
+  { name: "mia",   a: [1, 1, 0, 1, 0, 0], f: 1, hair: "r" },
+  { name: "omar",  a: [1, 0, 1, 0, 0, 0], f: 0, hair: "d" },
+  { name: "lena",  a: [1, 0, 0, 1, 1, 0], f: 1, hair: "b" },
+  { name: "ravi",  a: [1, 1, 0, 0, 0, 0], f: 0, hair: "d" },
+  { name: "finn",  a: [1, 0, 1, 1, 0, 0], f: 0, hair: "b" },
+  { name: "aisha", a: [1, 1, 0, 0, 1, 0], f: 1, hair: "d" },
+  { name: "jonas", a: [1, 0, 0, 1, 0, 1], f: 0, hair: "g" },
+  { name: "zoe",   a: [1, 0, 0, 0, 0, 0], f: 1, hair: "d" },
+  { name: "ines",  a: [0, 1, 0, 1, 1, 0], f: 1, hair: "g" },
+  { name: "malik", a: [0, 0, 1, 0, 0, 0], f: 0, hair: "d" },
+  { name: "sofia", a: [0, 0, 0, 1, 0, 0], f: 1, hair: "d" },
+  { name: "ben",   a: [0, 1, 0, 0, 0, 1], f: 0, hair: "d" },
+  { name: "karim", a: [0, 0, 1, 1, 0, 0], f: 0, hair: "d" },
+  { name: "yuki",  a: [0, 0, 0, 0, 1, 0], f: 1, hair: "d" },
+  { name: "elif",  a: [0, 1, 0, 1, 0, 0], f: 1, hair: "d" },
+  { name: "noah",  a: [0, 0, 0, 0, 1, 1], f: 0, hair: "d" },
 ];
 
 const QUESTIONS = [
@@ -62,6 +62,8 @@ const QUESTIONS = [
     test: (ch) => ch.hair === "b" },
   { label: "dark hair?",   sentence: "does the person have dark hair?",
     test: (ch) => ch.hair === "d" },
+  { label: "female?",      sentence: "is the person female?",
+    test: (ch) => ch.f === 1 },
 ];
 
 const N = CHARS.length;
@@ -261,6 +263,7 @@ document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
   if (ev.key >= "1" && ev.key <= "9") ask(Number(ev.key) - 1);
+  else if (ev.key === "0") ask(9);
   else if (ev.key === "n") newGame();
 });
 
