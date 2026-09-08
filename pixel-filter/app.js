@@ -1,25 +1,28 @@
 /* the pixel filter — logik und arithmetik.
  *
- * Ein 128x128-Graustufenbild (dieselben drei Motive wie im Photo
- * Digitiser), jedes Pixel ein Byte. Ein Filter ist dieselbe kleine
- * Rechnung auf jedem dieser Bytes:
+ * Ein 128x128-Bild (dieselben drei Motive wie im Photo Digitiser), in
+ * Graustufen ein Byte je Pixel, in Farbe drei (r, g, b). Ein Filter ist
+ * dieselbe kleine Rechnung auf jedem dieser Bytes:
  *
  *   brighter  new = old + 40          Addition mit Uebertraegen
  *   darker    new = old - 40          Subtraktion
  *   invert    new = 255 - old         Bit fuer Bit ein Nicht
  *   b/w       new = old >= t ? 255:0  ein Vergleich, eine Entscheidung
+ *             (in Farbe: erst die Helligkeit aus r, g, b, dann der Vergleich)
  *   blend     new = (old + other) / 2 Addition, dann eine Stelle nach rechts
  *
  * "step" rechnet EIN Pixel und legt die Rechnung offen: die acht Bits,
- * die Uebertraege, das Ergebnis. "run" macht den Rest zeilenweise in
- * zwei Sekunden, der Zaehler laeuft auf 16.384 und rechnet die Gatter
- * hoch (8 Volladdierer je Addition, etwa 5 Gatter je Volladdierer).
+ * die Uebertraege, das Ergebnis; in Farbe drei Spalten, eine je Kanal.
+ * "run" macht den Rest zeilenweise in zwei Sekunden, der Zaehler laeuft
+ * auf 16.384 (Farbe: 49.152) und rechnet die Gatter hoch (8 Volladdierer
+ * je Addition, etwa 5 Gatter je Volladdierer).
  *
  * Der Schalter clamp/wrap entscheidet, was am Rand passiert: Bei wrap
  * wirft der Addierer den neunten Uebertrag weg (230 + 40 = 14, fast
- * schwarz), und helle Flaechen bekommen schwarze Sprenkel. Bei clamp
- * kommt vorher ein Vergleich und dann die Grenze. Der Addierer selbst
- * weiss nicht, was 255 bedeutet; das muss man ihm sagen.
+ * schwarz), und helle Flaechen bekommen schwarze (in Farbe: bunte)
+ * Sprenkel. Bei clamp kommt vorher ein Vergleich und dann die Grenze.
+ * Der Addierer selbst weiss nicht, was 255 bedeutet; das muss man ihm
+ * sagen.
  *
  * Kein Framework, kein Build. */
 
@@ -30,38 +33,45 @@ const TOTAL = N * N;
 const PLUS = 40;
 const GATES_PER_ADD = 8 * 5;          // 8 Volladdierer, ~5 Gatter je Stueck
 const RUN_MS = 2000;
+const CH_NAMES = ["red", "green", "blue"];
 
 const FILTERS = [
-  { key: "brighter", label: "brighter +40", rule: "new = old + 40", op: "add", unit: "additions" },
-  { key: "darker",   label: "darker −40",   rule: "new = old − 40", op: "sub", unit: "subtractions" },
-  { key: "invert",   label: "invert",       rule: "new = 255 − old", op: "not", unit: "inversions" },
-  { key: "bw",       label: "black & white", rule: "new = old ≥ t ? 255 : 0", op: "cmp", unit: "comparisons" },
-  { key: "blend",    label: "blend",        rule: "new = (old + other) ÷ 2", op: "blend", unit: "additions" },
+  { key: "brighter", label: "brighter +40",  rule: "new = old + 40",           op: "add",   unit: "additions",
+    hint: "add 40 to every byte" },
+  { key: "darker",   label: "darker −40",    rule: "new = old − 40",           op: "sub",   unit: "subtractions",
+    hint: "subtract 40 from every byte" },
+  { key: "invert",   label: "invert",        rule: "new = 255 − old",          op: "not",   unit: "inversions",
+    hint: "255 − old flips every bit: a not-gate per bit, no adder needed" },
+  { key: "bw",       label: "black & white", rule: "new = old ≥ t ? 255 : 0",  op: "cmp",   unit: "comparisons",
+    hint: "compare every byte with the threshold: at or above → white, below → black" },
+  { key: "blend",    label: "blend",         rule: "new = (old + other) ÷ 2",  op: "blend", unit: "additions",
+    hint: "add the byte of the second picture, then halve: halving is shifting one place to the right" },
 ];
 const MOTIFS = ["parrot", "sunset", "lighthouse"];
 
 const el = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString("en-US");
 const bits = (v) => v.toString(2).padStart(8, "0");
-const b9 = (v) => " " + bits(v);   // neun Spalten: Platz fuer den neunten Uebertrag
+const lum = (r, g, b) => Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 
 // --- Zustand -----------------------------------------------------------------
 const state = {
   motif: "parrot",
+  mode: "grey",     // "grey": ein Byte je Pixel, "rgb": drei
   filter: 0,
   clamp: true,
   threshold: 128,
-  src: null,        // Uint8Array(TOTAL), das Graustufenbild
+  src: null,        // Uint8Array(TOTAL * 3), immer rgb gespeichert
   other: null,      // das zweite Motiv, fuer blend
-  out: null,        // Uint8Array(TOTAL), bisher gerechnete Pixel
+  out: null,        // Uint8Array(TOTAL * 3), bisher gerechnete Pixel
   next: 0,          // Index des naechsten Pixels
   running: false,
   last: null,       // Rechnung des zuletzt geschrittenen Pixels
 };
-const grey = {};    // Motivname -> Uint8Array
+const photos = {};  // Motivname -> { rgb: Uint8Array, grey: Uint8Array } (beide 3 Bytes je Pixel)
 
 // --- Motive laden und zu Bytes machen ---------------------------------------
-function loadGrey(name) {
+function loadMotif(name) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -71,19 +81,23 @@ function loadGrey(name) {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(img, 0, 0, N, N);
       const d = ctx.getImageData(0, 0, N, N).data;
-      const g = new Uint8Array(TOTAL);
+      const rgb = new Uint8Array(TOTAL * 3), grey = new Uint8Array(TOTAL * 3);
       for (let i = 0; i < TOTAL; i++) {
-        g[i] = Math.round(0.299 * d[4 * i] + 0.587 * d[4 * i + 1] + 0.114 * d[4 * i + 2]);
+        rgb[3 * i] = d[4 * i]; rgb[3 * i + 1] = d[4 * i + 1]; rgb[3 * i + 2] = d[4 * i + 2];
+        const g = lum(d[4 * i], d[4 * i + 1], d[4 * i + 2]);
+        grey[3 * i] = grey[3 * i + 1] = grey[3 * i + 2] = g;
       }
-      grey[name] = g;
+      photos[name] = { rgb, grey };
       resolve();
     };
     img.src = `../assets/photos/${name}.png`;
   });
 }
 
-// --- Die Rechnung fuer ein Pixel ---------------------------------------------
-function compute(old, other) {
+const channels = () => (state.mode === "rgb" ? 3 : 1);
+
+// --- Die Rechnung fuer ein Byte ----------------------------------------------
+function computeByte(old, other) {
   const f = FILTERS[state.filter];
   if (f.op === "add") {
     const raw = old + PLUS;
@@ -99,14 +113,41 @@ function compute(old, other) {
   return { raw, val: raw >> 1, over: false };
 }
 
+/* Ein Pixel: in Graustufen ein Byte (auf alle drei Kanaele kopiert), in
+ * Farbe drei Bytes nacheinander. Schwarz-Weiss in Farbe vergleicht die
+ * Helligkeit, nicht die einzelnen Kanaele. */
+function computePixel(i) {
+  const f = FILTERS[state.filter];
+  const s = state.src, o = state.other;
+  const res = { index: i, chans: [] };
+  if (f.op === "cmp" && state.mode === "rgb") {
+    const l = lum(s[3 * i], s[3 * i + 1], s[3 * i + 2]);
+    res.lum = l;
+    const v = l >= state.threshold ? 255 : 0;
+    res.chans.push({ old: l, val: v, raw: l, over: false });
+    for (let c = 0; c < 3; c++) state.out[3 * i + c] = v;
+    return res;
+  }
+  const nc = channels();
+  for (let c = 0; c < nc; c++) {
+    const r = computeByte(s[3 * i + c], o[3 * i + c]);
+    res.chans.push({ old: s[3 * i + c], other: o[3 * i + c], ...r });
+    if (nc === 1) { state.out[3 * i] = state.out[3 * i + 1] = state.out[3 * i + 2] = r.val; }
+    else state.out[3 * i + c] = r.val;
+  }
+  return res;
+}
+
 // --- Zeichnen ----------------------------------------------------------------
-function paint(cv, data, mark) {
+function paint(cv, data, dim, upto, mark) {
   const ctx = cv.getContext("2d");
   const img = ctx.createImageData(N, N);
   const d = img.data;
   for (let i = 0; i < TOTAL; i++) {
-    const v = data[i];
-    d[4 * i] = d[4 * i + 1] = d[4 * i + 2] = v;
+    const done = i < upto;
+    const src = done ? data : dim;
+    const shift = done ? 0 : 2;          // noch nicht gerechnet: das Original, stark abgedunkelt
+    d[4 * i] = src[3 * i] >> shift; d[4 * i + 1] = src[3 * i + 1] >> shift; d[4 * i + 2] = src[3 * i + 2] >> shift;
     d[4 * i + 3] = 255;
   }
   if (mark != null) {                      // das aktuelle Pixel: ein gelbes Kreuz
@@ -121,21 +162,15 @@ function paint(cv, data, mark) {
   ctx.putImageData(img, 0, 0);
 }
 
-function paintOut() {
-  // noch nicht gerechnete Pixel: das Original, stark abgedunkelt
-  const show = new Uint8Array(TOTAL);
-  for (let i = 0; i < TOTAL; i++) show[i] = i < state.next ? state.out[i] : state.src[i] >> 2;
-  paint(el("cv-out"), show, state.last ? state.last.index : null);
-  paint(el("cv-src"), state.src, state.last ? state.last.index : null);
+function paintAll() {
+  const mark = state.last ? state.last.index : null;
+  paint(el("cv-src"), state.src, state.src, TOTAL, mark);
+  paint(el("cv-out"), state.out, state.src, state.next, mark);
 }
 
 // --- Die Rechnung offenlegen -------------------------------------------------
-function row(lab, bitStr, dec, cls) {
-  return `<div class="row ${cls || ""}"><span class="lab">${lab}</span><span class="bits">${bitStr}</span><span class="dec">${dec}</span></div>`;
-}
-
 function carriesOf(a, b) {
-  // Uebertraege der Addition a + b, als String ueber neun Stellen (links der neunte)
+  // Uebertraege der Addition a + b: out[0] ist der neunte (aus Bit 7), out[8] leer
   let c = 0;
   const out = [];
   for (let i = 0; i < 8; i++) {
@@ -143,90 +178,117 @@ function carriesOf(a, b) {
     c = s > 1 ? 1 : 0;
     out.unshift(c);
   }
-  return out;                          // out[0] = Uebertrag aus Bit 7 (der neunte)
+  out.push(0);
+  return out;
 }
+
+const cell = (bitStr, dec) => `<td><span class="bits">${bitStr}</span><span class="dec">${dec === "" ? "" : dec}</span></td>`;
+const b9 = (v) => " " + bits(v);        // neun Spalten: Platz fuer den neunten Uebertrag
 
 function explain(p) {
   const f = FILTERS[state.filter];
-  const w = el("work");
-  const old = p.old;
-  let html = `<div class="head">pixel ${fmt(p.index)} of ${fmt(TOTAL)} (row ${Math.floor(p.index / N)}, column ${p.index % N})</div>`;
-  if (f.op === "add" || f.op === "blend") {
-    const b = f.op === "add" ? PLUS : p.other;
-    const carries = carriesOf(old, b);
-    const carryStr = carries.map((c, i) => c ? (i === 0 ? `<span class="carry ${p.over ? "dropped" : ""}">1</span>` : `<span class="carry">1</span>`) : " ").join("");
-    html += row("old", b9(old), old);
-    html += row(f.op === "add" ? "+ 40" : "+ other", b9(b), b);
-    html += row("carries", carryStr, "");
+  const nc = p.chans.length;
+  const rgb = state.mode === "rgb";
+  let html = `<div class="head">pixel ${fmt(p.index)} of ${fmt(TOTAL)} (row ${Math.floor(p.index / N)}, column ${p.index % N})` +
+             (rgb && nc === 3 ? ", three bytes, three calculations" : "") + `</div>`;
+  const rows = [];                         // [label, cls, [cellHtml je Kanal]]
+  const add = (lab, cls, cells) => rows.push({ lab, cls, cells });
+  const notes = [];
+
+  if (f.op === "cmp" && rgb) {
+    const s = state.src, i = p.index;
+    add("red", "", [cell(b9(s[3 * i]), s[3 * i])]);
+    add("green", "", [cell(b9(s[3 * i + 1]), s[3 * i + 1])]);
+    add("blue", "", [cell(b9(s[3 * i + 2]), s[3 * i + 2])]);
+    add("brightness", "result", [cell(b9(p.lum), p.lum)]);
+    add("threshold", "", [cell(b9(state.threshold), state.threshold)]);
+    add("= new", "result", [cell(b9(p.chans[0].val), p.chans[0].val)]);
+    notes.push(`<div class="note">brightness ≈ 0.3·red + 0.6·green + 0.1·blue = ${p.lum}. ${p.lum} ≥ ${state.threshold}? ${p.lum >= state.threshold ? "yes → 255 (white)" : "no → 0 (black)"}. one comparison, the same decision your receiver makes in challenge 1.</div>`);
+  } else if (f.op === "add" || f.op === "blend") {
+    const opLab = f.op === "add" ? "+ 40" : "+ other";
+    add("old", "", p.chans.map((c) => cell(b9(c.old), c.old)));
+    add(opLab, "", p.chans.map((c) => cell(b9(f.op === "add" ? PLUS : c.other), f.op === "add" ? PLUS : c.other)));
+    add("carries", "", p.chans.map((c) => {
+      const b = f.op === "add" ? PLUS : c.other;
+      const str = carriesOf(c.old, b).map((k, i) => k ? `<span class="carry ${i === 0 && c.over && !state.clamp ? "dropped" : ""}">1</span>` : " ").join("");
+      return cell(str, "");
+    }));
     if (f.op === "add") {
-      if (p.over && !state.clamp) {
-        html += row("= new", `<span class="dropped">1</span>${bits(p.val)}`, p.val, "result");
-        html += `<div class="note warn">${old} + ${PLUS} = ${p.raw}: nine bits. the adder drops the ninth carry, ${p.val} is left. almost black.</div>`;
-      } else if (p.over) {
-        html += row("= sum", `1${bits(p.raw - 256)}`, p.raw, "result");
-        html += `<div class="note ok">${p.raw} &gt; 255? yes → 255. a comparison and a decision, before the number is stored.</div>`;
+      const anyOver = p.chans.some((c) => c.over);
+      add(anyOver && state.clamp ? "= sum" : "= new", "result", p.chans.map((c) =>
+        c.over ? cell(`<span class="${state.clamp ? "carry" : "dropped"}">1</span>${bits(c.raw - 256)}`, state.clamp ? c.raw : c.val)
+               : cell(b9(c.val), c.val)));
+      const overs = p.chans.filter((c) => c.over);
+      if (overs.length && !state.clamp) {
+        notes.push(`<div class="note warn">${overs.map((c) => `${c.old} + ${PLUS} = ${c.raw}`).join(", ")}: nine bits. the adder drops the ninth carry${overs.length > 1 ? " each time" : ""}, ${overs.map((c) => c.val).join(" and ")} ${overs.length > 1 ? "are" : "is"} left. bright turns dark.</div>`);
+      } else if (overs.length) {
+        add("> 255?", "result", p.chans.map((c) => cell(c.over ? " yes → 255" : " no", "")));
+        notes.push(`<div class="note ok">a comparison and a decision before the byte is stored: that is what keeps bright bright.</div>`);
       } else {
-        html += row("= new", b9(p.val), p.val, "result");
-        html += `<div class="note">eight bits in, eight bits out. no overflow this time.</div>`;
+        notes.push(`<div class="note">eight bits in, eight bits out. no overflow this time.</div>`);
       }
     } else {
-      html += row("= sum", `${p.raw > 255 ? "1" : " "}${bits(p.raw & 255)}`, p.raw, "result");
-      html += row("÷ 2", b9(p.val), p.val, "result");
-      html += `<div class="note">halving is shifting every bit one place to the right.</div>`;
+      add("= sum", "result", p.chans.map((c) => cell(`${c.raw > 255 ? "1" : " "}${bits(c.raw & 255)}`, c.raw)));
+      add("÷ 2", "result", p.chans.map((c) => cell(b9(c.val), c.val)));
+      notes.push(`<div class="note">halving is shifting every bit one place to the right; the lowest bit falls off.</div>`);
     }
   } else if (f.op === "sub") {
-    html += row("old", b9(old), old);
-    html += row("− 40", b9(PLUS), PLUS);
-    if (p.over && !state.clamp) {
-      html += row("= new", b9(p.val), p.val, "result");
-      html += `<div class="note warn">${old} − ${PLUS} = ${p.raw}: below zero. the bits wrap around to ${p.val}. almost white.</div>`;
-    } else if (p.over) {
-      html += row("= new", b9(0), 0, "result");
-      html += `<div class="note ok">${p.raw} &lt; 0? yes → 0. compare first, then cap.</div>`;
+    add("old", "", p.chans.map((c) => cell(b9(c.old), c.old)));
+    add("− 40", "", p.chans.map(() => cell(b9(PLUS), PLUS)));
+    add("= new", "result", p.chans.map((c) => cell(b9(c.val), c.val)));
+    const overs = p.chans.filter((c) => c.over);
+    if (overs.length && !state.clamp) {
+      notes.push(`<div class="note warn">${overs.map((c) => `${c.old} − ${PLUS} = ${c.raw}`).join(", ")}: below zero. the bits wrap around to ${overs.map((c) => c.val).join(" and ")}. dark turns bright.</div>`);
+    } else if (overs.length) {
+      notes.push(`<div class="note ok">${overs.map((c) => c.raw).join(", ")} &lt; 0? yes → 0. compare first, then cap.</div>`);
     } else {
-      html += row("= new", b9(p.val), p.val, "result");
-      html += `<div class="note">subtracting is adding the negative; the adder does that too.</div>`;
+      notes.push(`<div class="note">subtracting is adding the negative; the same adder does it.</div>`);
     }
   } else if (f.op === "not") {
-    html += row("old", b9(old), old);
-    html += row("255", b9(255), 255);
-    html += row("= new", b9(p.val), p.val, "result");
-    html += `<div class="note">255 − old flips every bit: eight not-gates, no adder needed.</div>`;
+    add("old", "", p.chans.map((c) => cell(b9(c.old), c.old)));
+    add("= 255 − old", "result", p.chans.map((c) => cell(b9(c.val), c.val)));
+    notes.push(`<div class="note">every bit flipped: ${nc * 8} not-gates, no adder needed.</div>`);
   } else if (f.op === "cmp") {
-    html += row("old", b9(old), old);
-    html += row("t", b9(state.threshold), state.threshold);
-    html += row("= new", b9(p.val), p.val, "result");
-    html += `<div class="note">${old} ≥ ${state.threshold}? ${old >= state.threshold ? "yes → 255 (white)" : "no → 0 (black)"}. the same decision your receiver makes in challenge 1.</div>`;
+    add("old", "", p.chans.map((c) => cell(b9(c.old), c.old)));
+    add("threshold", "", p.chans.map(() => cell(b9(state.threshold), state.threshold)));
+    add("= new", "result", p.chans.map((c) => cell(b9(c.val), c.val)));
+    const c = p.chans[0];
+    notes.push(`<div class="note">${c.old} ≥ ${state.threshold}? ${c.old >= state.threshold ? "yes → 255 (white)" : "no → 0 (black)"}. the same decision your receiver makes in challenge 1.</div>`);
   }
-  w.innerHTML = html;
+
+  let table = "<table>";
+  if (rgb && nc === 3) {
+    table += `<tr><th></th>${CH_NAMES.map((n, i) => `<th class="ch-${"rgb"[i]}">${n}</th>`).join("")}</tr>`;
+  }
+  for (const r of rows) table += `<tr class="${r.cls}"><td class="lab">${r.lab}</td>${r.cells.join("")}</tr>`;
+  table += "</table>";
+  el("work").innerHTML = html + table + notes.join("");
 }
 
 function updateCounter() {
   const f = FILTERS[state.filter];
-  const n = state.next;
-  el("cnt-ops").textContent = `${f.unit}: ${fmt(n)} of ${fmt(TOTAL)}`;
-  const gates = f.op === "not" ? n * 8 : f.op === "cmp" ? n * GATES_PER_ADD : f.op === "blend" ? n * (GATES_PER_ADD + 8) : n * GATES_PER_ADD;
+  const perPixel = (f.op === "cmp" && state.mode === "rgb") ? 1 : channels();
+  const n = state.next * perPixel, all = TOTAL * perPixel;
+  el("cnt-ops").textContent = `${f.unit}: ${fmt(n)} of ${fmt(all)}`;
+  const gates = f.op === "not" ? n * 8 : f.op === "blend" ? n * (GATES_PER_ADD + 8) : n * GATES_PER_ADD;
   el("cnt-gates").textContent = n === 0 ? "" : `≈ ${fmt(gates)} gate switches so far` +
-    (n === TOTAL ? " · a modern chip does this in well under a millisecond" : "");
-  el("lbl-out").textContent = n === 0 ? "after (nothing computed yet)" : n === TOTAL ? "after: all 16,384 done" : "after (computing…)";
+    (state.next === TOTAL ? " · a modern chip does this in well under a millisecond" : "");
+  el("lbl-out").textContent = state.next === 0 ? "after (nothing computed yet)"
+    : state.next === TOTAL ? `after: all ${fmt(TOTAL)} pixels done` : "after (computing…)";
 }
 
 // --- Schritt und Lauf --------------------------------------------------------
 function stepOne() {
   if (state.next >= TOTAL) return;
-  const i = state.next;
-  const old = state.src[i], other = state.other[i];
-  const r = compute(old, other);
-  state.out[i] = r.val;
-  state.next = i + 1;
-  state.last = { index: i, old, other, ...r };
+  state.last = computePixel(state.next);
+  state.next += 1;
 }
 
 function doStep() {
-  if (state.running) return;
+  if (state.running || state.next >= TOTAL) return;
   stepOne();
   explain(state.last);
-  paintOut();
+  paintAll();
   updateCounter();
 }
 
@@ -240,7 +302,7 @@ function doRun() {
     const frac = Math.min(1, (performance.now() - t0) / RUN_MS);
     const target = startIdx + Math.floor((TOTAL - startIdx) * frac);
     while (state.next < target) stepOne();
-    paintOut();
+    paintAll();
     updateCounter();
     if (state.next < TOTAL) { setTimeout(tick, 16); return; }
     state.running = false;
@@ -248,61 +310,65 @@ function doRun() {
     const f = FILTERS[state.filter];
     el("work").innerHTML += `<div class="note">…and ${fmt(TOTAL)} times the same thing. that is the whole filter.</div>`;
     if (f.op === "add" && !state.clamp) {
-      el("work").innerHTML += `<div class="note warn">see the black speckles in the bright areas? every one is a dropped ninth carry.</div>`;
+      el("work").innerHTML += `<div class="note warn">see the ${state.mode === "rgb" ? "coloured" : "black"} speckles in the bright areas? every one is a dropped ninth carry.</div>`;
     }
   };
   setTimeout(tick, 0);
 }
 
 function reset() {
-  state.src = grey[state.motif];
-  state.other = grey[MOTIFS[(MOTIFS.indexOf(state.motif) + 1) % MOTIFS.length]];
-  state.out = new Uint8Array(TOTAL);
+  const pick = (name) => photos[name][state.mode === "rgb" ? "rgb" : "grey"];
+  state.src = pick(state.motif);
+  state.other = pick(MOTIFS[(MOTIFS.indexOf(state.motif) + 1) % MOTIFS.length]);
+  state.out = new Uint8Array(TOTAL * 3);
   state.next = 0;
   state.last = null;
   state.running = false;
   const f = FILTERS[state.filter];
-  el("rule").innerHTML = f.op === "cmp"
-    ? `new = old ≥ <span class="dim">${state.threshold}</span> ? 255 : 0`
-    : f.rule + (f.op === "add" || f.op === "sub" ? ` <span class="dim">· ${state.clamp ? "clamp at the edge" : "wrap at the edge"}</span>` : "");
+  const edgy = f.op === "add" || f.op === "sub";
+  el("rule").innerHTML = f.op === "cmp" ? `new = old ≥ ${state.threshold} ? 255 : 0` : f.rule;
+  el("rule-hint").textContent = f.hint + (state.mode === "rgb" && f.op !== "cmp" ? ", for red, green and blue separately" : "");
   el("threshold").classList.toggle("show", f.op === "cmp");
-  el("work").innerHTML = `<div class="idle">press "step" to compute one pixel and see the arithmetic. press "run" for all the rest.</div>`;
-  paintOut();
+  el("edge").style.visibility = edgy ? "visible" : "hidden";
+  el("edge-hint").textContent = !edgy ? "" : state.clamp
+    ? "clamp: compare first, then stop at the edge (255 or 0). this is what your photo app does."
+    : "wrap: let the adder drop the ninth bit. 230 + 40 = 14. watch the bright areas.";
+  el("lbl-src").textContent = `before: ${fmt(TOTAL)} pixels × ${channels()} byte${channels() > 1 ? "s" : ""}`;
+  el("motifs").classList.toggle("grey", state.mode === "grey");
+  el("work").innerHTML = `<div class="idle"><b>step</b> computes one pixel and shows the arithmetic: its byte${channels() > 1 ? "s" : ""}, bit by bit, with the carries.<br><b>run</b> lets the machine do all the others, row by row, in about two seconds.</div>`;
+  paintAll();
   updateCounter();
 }
 
 // --- Bedienung ---------------------------------------------------------------
+function pressed(container, chosen) {
+  container.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === chosen ? "true" : "false"));
+}
+
 const filt = el("filters");
 FILTERS.forEach((f, i) => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "ctrl"; b.textContent = f.label;
   b.setAttribute("aria-pressed", i === state.filter ? "true" : "false");
-  b.addEventListener("click", () => {
-    state.filter = i;
-    filt.querySelectorAll("button").forEach((x, j) => x.setAttribute("aria-pressed", j === i ? "true" : "false"));
-    reset();
-  });
+  b.addEventListener("click", () => { state.filter = i; pressed(filt, b); reset(); });
   filt.appendChild(b);
 });
 
 el("motifs").addEventListener("click", (ev) => {
   const b = ev.target.closest("button");
   if (!b) return;
-  state.motif = b.dataset.m;
-  el("motifs").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
-  reset();
+  state.motif = b.dataset.m; pressed(el("motifs"), b); reset();
 });
-
+el("modes").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  state.mode = b.dataset.mode; pressed(el("modes"), b); reset();
+});
 el("bt-step").addEventListener("click", doStep);
 el("bt-run").addEventListener("click", doRun);
 el("bt-reset").addEventListener("click", reset);
-el("bt-clamp").addEventListener("click", () => { state.clamp = true; setMode(); });
-el("bt-wrap").addEventListener("click", () => { state.clamp = false; setMode(); });
-function setMode() {
-  el("bt-clamp").setAttribute("aria-pressed", state.clamp ? "true" : "false");
-  el("bt-wrap").setAttribute("aria-pressed", state.clamp ? "false" : "true");
-  reset();
-}
+el("bt-clamp").addEventListener("click", () => { state.clamp = true; pressed(el("edge"), el("bt-clamp")); reset(); });
+el("bt-wrap").addEventListener("click", () => { state.clamp = false; pressed(el("edge"), el("bt-wrap")); reset(); });
 el("in-thr").addEventListener("input", (ev) => {
   state.threshold = Number(ev.target.value);
   el("rd-thr").textContent = String(state.threshold);
@@ -315,8 +381,9 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "s") doStep();
   else if (ev.key === "r") doRun();
   else if (ev.key === "0") reset();
+  else if (ev.key === "c") el("modes").querySelectorAll("button")[state.mode === "grey" ? 1 : 0].click();
   else if (ev.key >= "1" && ev.key <= "5") filt.querySelectorAll("button")[Number(ev.key) - 1].click();
 });
 
 // --- Start -------------------------------------------------------------------
-Promise.all(MOTIFS.map(loadGrey)).then(reset);
+Promise.all(MOTIFS.map(loadMotif)).then(reset);
