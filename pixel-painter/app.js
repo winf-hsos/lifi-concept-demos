@@ -16,6 +16,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const SIZE = 8;
 
 /* Vordefinierte Bilder, je acht Bytes. Das Herz ist das Startbild,

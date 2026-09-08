@@ -22,6 +22,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const SR = 48000;                  // "analoge" Referenzrate
 const DUR = 2.5;                   // Sekunden je Klang
 const LEN = SR * DUR;

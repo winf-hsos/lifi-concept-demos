@@ -22,6 +22,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const SIZE = 128;
 const N = SIZE * SIZE * 4;         // RGBA
 const NOISE = { careful: 5, normal: 12, sloppy: 28 };

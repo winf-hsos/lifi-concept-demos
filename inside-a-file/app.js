@@ -14,6 +14,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const el = (id) => document.getElementById(id);
 const hex2 = (v) => v.toString(16).padStart(2, "0");
 

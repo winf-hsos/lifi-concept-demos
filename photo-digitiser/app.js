@@ -19,6 +19,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const FULL = 256;
 const RESOLUTIONS = [1, 2, 4, 8, 16, 32, 64, 128, 256];
 const DEPTHS = [

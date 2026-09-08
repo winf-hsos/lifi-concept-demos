@@ -20,6 +20,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 // Attribute: [glasses, hat, beard, curly, earrings, bowtie], hair: r/b/g/d
 const CHARS = [
   { name: "mia",   a: [1, 1, 0, 1, 0, 0], hair: "r" },

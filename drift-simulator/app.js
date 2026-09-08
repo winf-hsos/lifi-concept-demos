@@ -25,6 +25,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 // --- Modell -----------------------------------------------------------------
 const T = 100;                   // ms je Zeitschlitz (Senderuhr, fix)
 const SYMBOL_COLORS =            // vier unterscheidbare Sendefarben
