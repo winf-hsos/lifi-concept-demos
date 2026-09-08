@@ -113,3 +113,10 @@ button.ctrl:hover { border-color: var(--gray-light); color: var(--white); }
 button.ctrl:active { transform: translateY(1px); }
 
 .hint { color: var(--gray-dark); font-size: 12px; }
+
+/* Embed-Modus (?embed=1): fuer die Einbettung auf einer Folie bleibt nur die
+ * Sache selbst; Kopfzeile, Titel, Fusszeile und Merksatz verschwinden. Jede
+ * Demo darf weitere Elemente mit .embed-hide markieren. */
+body.embed .demo-topbar, body.embed main > h1, body.embed main > .subtitle,
+body.embed .demo-footer, body.embed .takeaway, body.embed .embed-hide { display: none !important; }
+body.embed main { padding-top: 4px; }

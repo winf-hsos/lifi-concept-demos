@@ -28,6 +28,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const el = (id) => document.getElementById(id);
 const fmt = (n) => n.toLocaleString("en-US");
 const bits = (v, w = 8) => v.toString(2).padStart(w, "0");

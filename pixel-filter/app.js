@@ -28,6 +28,9 @@
 
 "use strict";
 
+// Embed-Modus fuer Folien: ?embed=1
+if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+
 const N = 128;
 const TOTAL = N * N;
 const PLUS = 40;
