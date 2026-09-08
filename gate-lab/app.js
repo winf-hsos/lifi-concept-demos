@@ -401,7 +401,7 @@ function renderRegister(stage) {
   if (state.store) state.regQ = state.regD;
   el("hint").textContent = "eight flip-flops side by side hold one byte. store is just another wire: while it is 1, the lamps follow the input switches; switch it to 0, and the byte is frozen, whatever you do to the switches afterwards.";
   stage.appendChild(bitRow("input d", state.regD, (v) => { state.regD = v; render(); }));
-  const W = 860, boxW = 72, gap = 26, x0 = 60;
+  const W = 900, boxW = 72, gap = 26, x0 = 60;    // rechts Platz fuer den store-Schalter
   let s = `<svg viewBox="0 0 ${W} 215" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="8-bit register">`;
   // die Speicherleitung: ein Schalter rechts, ein Draht in jeden Block
   const xr = x0 + 8 * (boxW + gap) - gap;
