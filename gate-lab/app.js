@@ -225,8 +225,8 @@ function renderGates(stage) {
     c.ports.push({ net: "a", x: 110, y: 65, label: "a" });
     c.wires.push({ net: "a", pts: [[128, 65], [240, 65]] });
   } else {
-    c.ports.push({ net: "a", x: 110, y: 45, label: "a" }, { net: "b", x: 110, y: 85, label: "b" });
-    c.wires.push({ net: "a", pts: [[128, 45], [240, 55]] }, { net: "b", pts: [[128, 85], [240, 75]] });
+    c.ports.push({ net: "a", x: 110, y: 55, label: "a" }, { net: "b", x: 110, y: 75, label: "b" });
+    c.wires.push({ net: "a", pts: [[128, 55], [240, 55]] }, { net: "b", pts: [[128, 75], [240, 75]] });
   }
   c.wires.push({ net: "q", pts: [[state.gate === "not" ? 288 : 296, 65], [409, 65]] });
   const nets = simulate(c, { a: state.ia, b: state.ib });
@@ -381,10 +381,10 @@ function flipFlopCircuit() {
   return {
     w: 560, h: 220, aria: "sr flip-flop from two nor gates",
     // SR-Latch aus NOR: reset am Gatter, das q liefert; set am Gatter, das not q liefert
-    ports: [{ net: "r", x: 80, y: 50, label: "reset" }, { net: "s", x: 80, y: 170, label: "set" }],
+    ports: [{ net: "r", x: 80, y: 40, label: "reset" }, { net: "s", x: 80, y: 180, label: "set" }],
     gates: [{ id: "n1", type: "nor", x: 260, y: 30, in: ["r", "qn"], out: "q" },
             { id: "n2", type: "nor", x: 260, y: 150, in: ["q", "s"], out: "qn" }],
-    wires: [{ net: "r", pts: [[98, 50], [260, 40]] }, { net: "s", pts: [[98, 170], [260, 180]] },
+    wires: [{ net: "r", pts: [[98, 40], [260, 40]] }, { net: "s", pts: [[98, 180], [260, 180]] },
             { net: "q", pts: [[318, 50], [430, 50]] }, { net: "q", pts: [[360, 50], [360, 100], [220, 130], [220, 160], [260, 160]] },
             { net: "qn", pts: [[318, 170], [430, 170]] }, { net: "qn", pts: [[360, 170], [360, 120], [220, 90], [220, 60], [260, 60]] }],
     dots: [[360, 50, "q"], [360, 170, "qn"]],
