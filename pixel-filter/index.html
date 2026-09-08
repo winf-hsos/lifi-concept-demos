@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>the pixel filter</title>
-  <meta name="description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink, and see what happens at 255.">
+  <meta name="description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LiFi Project · concept demos">
   <meta property="og:title" content="the pixel filter">
-  <meta property="og:description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink, and see what happens at 255.">
+  <meta property="og:description" content="make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink.">
   <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/pixel-filter/">
   <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/pixel-filter/preview.png">
   <meta property="og:image:width" content="1200">
@@ -77,7 +77,7 @@
     .actions .edge { display: flex; align-items: center; gap: 6px; margin-left: 18px; color: var(--gray); font-size: 13px; }
     .actions .edge button.ctrl { padding: 6px 12px; font-size: 14px; }
     .actions .edge button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
-    .edge-hint { text-align: center; color: var(--gray-dark); font-size: 12px; margin-top: 6px; min-height: 16px; }
+    .edge-hint { text-align: center; color: var(--gray); font-size: 13px; margin: 8px auto 0; max-width: 640px; min-height: 16px; line-height: 1.4; }
 
     .work {
       font-family: var(--mono); font-size: 15px; line-height: 1.7;
@@ -168,11 +168,6 @@
       <button class="ctrl go" id="bt-step" type="button">step: one pixel</button>
       <button class="ctrl go" id="bt-run" type="button">run: all the rest</button>
       <button class="ctrl" id="bt-reset" type="button">reset</button>
-      <div class="edge" id="edge">
-        <span>if the result leaves 0…255:</span>
-        <button class="ctrl" id="bt-clamp" type="button" aria-pressed="true">clamp</button>
-        <button class="ctrl" id="bt-wrap" type="button" aria-pressed="false">wrap</button>
-      </div>
     </div>
     <div class="edge-hint" id="edge-hint"></div>
 
@@ -193,6 +188,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

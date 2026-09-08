@@ -17,12 +17,10 @@
  * auf 16.384 (Farbe: 49.152) und rechnet die Gatter hoch (8 Volladdierer
  * je Addition, etwa 5 Gatter je Volladdierer).
  *
- * Der Schalter clamp/wrap entscheidet, was am Rand passiert: Bei wrap
- * wirft der Addierer den neunten Uebertrag weg (230 + 40 = 14, fast
- * schwarz), und helle Flaechen bekommen schwarze (in Farbe: bunte)
- * Sprenkel. Bei clamp kommt vorher ein Vergleich und dann die Grenze.
- * Der Addierer selbst weiss nicht, was 255 bedeutet; das muss man ihm
- * sagen.
+ * Am Rand (255 oder 0) wird immer begrenzt (clamp): erst ein Vergleich,
+ * dann die Grenze, wie in jeder Foto-App. Das Rechenfeld zeigt bei hellen
+ * Pixeln den neunten Uebertrag und den Vergleich; ein Hinweis nennt, was
+ * ein Addierer allein daraus machen wuerde (230 + 40 = 14).
  *
  * Kein Framework, kein Build. */
 
@@ -322,9 +320,6 @@ function doRun() {
     explain(state.last);
     const f = FILTERS[state.filter];
     el("work").innerHTML += `<div class="note">…and ${fmt(TOTAL)} times the same thing. that is the whole filter.</div>`;
-    if (f.op === "add" && !state.clamp) {
-      el("work").innerHTML += `<div class="note warn">see the ${state.mode === "rgb" ? "coloured" : "black"} speckles in the bright areas? every one is a dropped ninth carry.</div>`;
-    }
   };
   setTimeout(tick, 0);
 }
@@ -342,10 +337,7 @@ function reset() {
   el("rule").innerHTML = f.op === "cmp" ? `new = old ≥ ${state.threshold} ? 255 : 0` : f.rule;
   el("rule-hint").textContent = f.hint + (state.mode === "rgb" && f.op !== "cmp" ? ", for red, green and blue separately" : "");
   el("threshold").classList.toggle("show", f.op === "cmp");
-  el("edge").style.visibility = edgy ? "visible" : "hidden";
-  el("edge-hint").textContent = !edgy ? "" : state.clamp
-    ? "clamp: compare first, then stop at the edge (255 or 0). this is what your photo app does."
-    : "wrap: let the adder drop the ninth bit. 230 + 40 = 14. watch the bright areas.";
+  el("edge-hint").textContent = !edgy ? "" : "if a result leaves 0…255, the filter compares first and caps it there (clamp), like your photo app. an adder alone would drop the ninth bit: 230 + 40 would become 14.";
   el("lbl-src").textContent = `before: ${fmt(TOTAL)} pixels × ${channels()} byte${channels() > 1 ? "s" : ""}`;
   el("motifs").classList.toggle("grey", state.mode === "grey");
   el("work").innerHTML = `<div class="idle"><b>step</b> computes one pixel and shows the arithmetic: its byte${channels() > 1 ? "s" : ""}, bit by bit, with the carries.<br><b>run</b> lets the machine do all the others, row by row, in about two seconds.</div>`;
@@ -380,8 +372,6 @@ el("modes").addEventListener("click", (ev) => {
 el("bt-step").addEventListener("click", doStep);
 el("bt-run").addEventListener("click", doRun);
 el("bt-reset").addEventListener("click", reset);
-el("bt-clamp").addEventListener("click", () => { state.clamp = true; pressed(el("edge"), el("bt-clamp")); reset(); });
-el("bt-wrap").addEventListener("click", () => { state.clamp = false; pressed(el("edge"), el("bt-wrap")); reset(); });
 el("in-thr").addEventListener("input", (ev) => {
   state.threshold = Number(ev.target.value);
   el("rd-thr").textContent = String(state.threshold);
@@ -400,21 +390,18 @@ document.addEventListener("keydown", (ev) => {
 
 // --- Vorbelegung ueber die Adresse ------------------------------------------
 // ?picture=parrot|sunset|lighthouse  ?mode=grey|rgb  ?filter=brighter|darker|invert|bw|blend
-// ?edge=clamp|wrap  ?threshold=0..255  (dazu ?embed=1 fuer die Folie: dann ohne Einstellzeile)
+// ?threshold=0..255  (dazu ?embed=1 fuer die Folie: dann ohne Einstellzeile)
 function applyParams() {
   const q = new URLSearchParams(location.search);
   if (MOTIFS.includes(q.get("picture"))) state.motif = q.get("picture");
   if (["grey", "rgb"].includes(q.get("mode"))) state.mode = q.get("mode");
   const fi = FILTERS.findIndex((f) => f.key === q.get("filter"));
   if (fi >= 0) state.filter = fi;
-  if (["clamp", "wrap"].includes(q.get("edge"))) state.clamp = q.get("edge") === "clamp";
   const t = Number(q.get("threshold"));
   if (q.has("threshold") && Number.isFinite(t)) { state.threshold = Math.max(0, Math.min(255, Math.floor(t))); el("in-thr").value = String(state.threshold); el("rd-thr").textContent = String(state.threshold); }
   el("motifs").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.m === state.motif ? "true" : "false"));
   el("modes").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === state.mode ? "true" : "false"));
   filt.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", i === state.filter ? "true" : "false"));
-  el("bt-clamp").setAttribute("aria-pressed", state.clamp ? "true" : "false");
-  el("bt-wrap").setAttribute("aria-pressed", state.clamp ? "false" : "true");
 }
 
 // --- Start -------------------------------------------------------------------

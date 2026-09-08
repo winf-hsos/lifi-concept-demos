@@ -16,6 +16,7 @@
  *   d-latch      d und store werden mit zwei AND und einem NOT zu set und
  *                reset fuer dieses Flip-Flop: der Baustein des Registers
  *   register     acht davon, ein Byte, das bleibt, bis "store" kommt
+ *   parity       acht Schalter, sieben XOR in Reihe: gerade oder ungerade viele Einsen
  *
  * Alles laeuft ueber eine kleine Netzliste: Gatter lesen Netze, schreiben
  * ein Netz; die Simulation iteriert, bis nichts mehr kippt (so kommen die
@@ -195,7 +196,7 @@ if (q.get("circuit") === "full-adder" && q.has("a")) { state.ia = num("a", 1, 1)
 
 const STATIONS = [
   ["gates", "gates"], ["half-adder", "half adder"], ["full-adder", "full adder"], ["byte-adder", "byte adder"],
-  ["compare", "compare"], ["flip-flop", "flip-flop"], ["d-latch", "d latch"], ["register", "register"],
+  ["compare", "compare"], ["flip-flop", "flip-flop"], ["d-latch", "d latch"], ["register", "register"], ["parity", "parity"],
 ];
 
 function setUrl() {
@@ -203,6 +204,7 @@ function setUrl() {
   p.set("circuit", state.station);
   if (state.station === "gates") p.set("gate", state.gate);
   if (["byte-adder", "compare"].includes(state.station)) { p.set("a", state.a); p.set("b", state.b); }
+  if (state.station === "parity") p.set("a", state.a);
   history.replaceState(null, "", "?" + p.toString());
 }
 
@@ -471,6 +473,33 @@ function renderRegister(stage) {
   note(stage, "a cpu has a few dozen of these; your pixel's byte sits in one while it is being added to. the store signal is what a clock provides, tick after tick.");
 }
 
+// --- Paritaet: XOR ueber ein Byte ----------------------------------------------
+function renderParity(stage) {
+  el("hint").textContent = "seven xor gates in a row. each one takes the result so far and the next bit. at the end, one bit says whether the byte has an even or an odd number of ones: the check bit a sender appends.";
+  stage.appendChild(bitRow("byte", state.a, (v) => { state.a = v; render(); }));
+  const W = 900, pitch = 100, x0 = 80, yBit = 30, yG = 110, k = 1.0, gw = 56 * k, gh = 40 * k, yIn = yG + 30 * k;
+  let s = `<svg viewBox="0 0 ${W} 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="parity chain">`;
+  let acc = 0, ones = 0;
+  for (let i = 7; i >= 0; i--) {
+    const bit = (state.a >> i) & 1, k2 = 7 - i, gx = x0 + k2 * pitch, cx = gx + gw / 2;
+    ones += bit;
+    s += `<text x="${cx}" y="${yBit + 8}" text-anchor="middle" font-size="18" font-family="Roboto Mono, monospace" fill="${bit ? Y : GL}">${bit}</text>`;
+    s += wire([[cx, yBit + 16], [cx, yG - 16], [gx - 8, yG - 16], [gx - 8, yG + 10 * k], [gx, yG + 10 * k]], !!bit);
+    if (k2 === 0) s += wire([[gx - 40, yIn], [gx, yIn]], false) + `<text x="${gx - 46}" y="${yIn + 5}" text-anchor="end" font-size="14" font-family="Roboto Mono, monospace" fill="${G}">0</text>`;
+    else s += wire([[gx - pitch + gw, yIn], [gx, yIn]], !!acc);
+    acc ^= bit;
+    s += gateShape("xor", gx, yG, !!acc);
+    s += `<text x="${cx}" y="${yG + gh + 34}" text-anchor="middle" font-size="16" font-family="Roboto Mono, monospace" fill="${acc ? Y : GL}">${acc}</text>`;
+  }
+  const last = x0 + 7 * pitch + gw;
+  s += wire([[last, yIn], [last + 30, yIn]], !!acc) + lamp(last + 48, yIn, !!acc, "check");
+  s += `<text x="${x0 - 30}" y="${yG + gh + 34}" text-anchor="end" font-size="13" font-family="Arial, sans-serif" fill="${GR}">so far</text>`;
+  s += "</svg>";
+  const bn = document.createElement("div"); bn.className = "bench"; bn.innerHTML = s; stage.appendChild(bn);
+  stage.appendChild(readout(`${ones} one${ones === 1 ? "" : "s"}: ${ones % 2 ? "odd" : "even"} → check bit ${acc}`));
+  note(stage, "flip any single bit of the byte and the check bit flips too: a receiver that recomputes it notices the error. flip two, and it does not. see errors and redundancy.");
+}
+
 // --- Rahmen ------------------------------------------------------------------
 function note(stage, text) {
   const n = document.createElement("div"); n.className = "note"; n.innerHTML = text; stage.appendChild(n);
@@ -487,14 +516,14 @@ function render() {
   const stage = el("stage"); stage.innerHTML = "";
   ({ "gates": () => renderGates(stage), "half-adder": () => renderSmallAdder(stage, "half"), "full-adder": () => renderSmallAdder(stage, "full"),
      "byte-adder": () => renderByte(stage, false), "compare": () => renderByte(stage, true), "flip-flop": () => renderFlipFlop(stage),
-     "d-latch": () => renderDLatch(stage), "register": () => renderRegister(stage) }[state.station] || (() => renderGates(stage)))();
+     "d-latch": () => renderDLatch(stage), "register": () => renderRegister(stage), "parity": () => renderParity(stage) }[state.station] || (() => renderGates(stage)))();
   setUrl();
 }
 
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
-  if (ev.key >= "1" && ev.key <= "8") { state.station = STATIONS[Number(ev.key) - 1][0]; render(); }
+  if (ev.key >= "1" && ev.key <= "9") { state.station = STATIONS[Number(ev.key) - 1][0]; render(); }
 });
 
 render();
