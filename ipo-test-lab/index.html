@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the ipo test lab</title>
+  <meta name="description" content="change sensor values and the classification rule, compare actual with expected output, and watch the test pass or fail.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project &middot; concept demos">
+  <meta property="og:title" content="the ipo test lab">
+  <meta property="og:description" content="change sensor values and the classification rule, compare actual with expected output, and watch the test pass or fail.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/ipo-test-lab/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/ipo-test-lab/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .presets {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 18px;
+    }
+    .presets .label { color: var(--gray); font-size: 13px; margin-right: 4px; }
+    button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1.16fr) 28px minmax(0, 1fr);
+      align-items: stretch;
+    }
+    .connector {
+      display: grid;
+      place-items: center;
+      color: var(--gray-light);
+      font-family: var(--mono);
+      font-size: 22px;
+    }
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      padding: 18px;
+      background: #080a0c;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--gray);
+      font-size: 13px;
+    }
+    .panel-label .number { color: var(--blue); font-family: var(--mono); }
+
+    .sensor-preview {
+      width: 74px;
+      height: 74px;
+      border: 2px solid var(--gray-light);
+      border-radius: 50%;
+      margin: 14px auto;
+    }
+    .sliders { display: grid; gap: 8px; }
+    .sliders label,
+    .threshold {
+      display: grid;
+      grid-template-columns: 24px minmax(70px, 1fr) 44px;
+      align-items: center;
+      gap: 8px;
+    }
+    .sliders .channel,
+    .threshold span { color: var(--gray); font-size: 13px; }
+    .sliders .channel { font-family: var(--mono); text-transform: uppercase; }
+    .sliders output,
+    .threshold output {
+      color: var(--gray-light);
+      font: 13px var(--mono);
+      text-align: right;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+
+    .function {
+      color: var(--white);
+      font: 15px var(--mono);
+      margin: 22px 0 15px;
+      white-space: nowrap;
+    }
+    .rule {
+      display: grid;
+      gap: 8px;
+      color: var(--gray-light);
+      font: 12px/1.35 var(--mono);
+      margin-bottom: 24px;
+    }
+    .rule .keyword { color: var(--blue); }
+    .rule .arrow { color: var(--gray); padding: 0 3px; }
+    .threshold {
+      grid-template-columns: 76px minmax(70px, 1fr) 36px;
+      margin-top: auto;
+    }
+    .threshold + .threshold { margin-top: 9px; }
+
+    .caption { color: var(--gray); font-size: 12px; }
+    .actual {
+      font: 34px var(--mono);
+      margin: 5px 0 18px;
+      min-height: 42px;
+    }
+    .actual.red { color: var(--red); }
+    .actual.green { color: var(--green); }
+    .actual.blue { color: var(--blue); }
+    .actual.off,
+    .actual.uncertain { color: var(--gray-light); }
+    .expected-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+    .expected-buttons button.ctrl { padding: 5px 9px; font-size: 12px; }
+    .result {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid var(--gray-dark);
+      margin-top: auto;
+      padding-top: 15px;
+      font: 24px var(--mono);
+    }
+    .result.pass { color: var(--green); }
+    .result.fail { color: var(--red); }
+
+    .trace {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 15px 2px 0;
+      color: var(--gray);
+      font-size: 13px;
+    }
+    .trace code { color: var(--gray-light); }
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 22px 0 2px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+
+    @media (max-width: 760px) {
+      .pipeline { grid-template-columns: 1fr; }
+      .connector { min-height: 28px; transform: rotate(90deg); }
+      .panel { padding: 15px; }
+      .function { margin-top: 16px; }
+      .trace { flex-direction: column; gap: 3px; }
+    }
+    body.embed main { width: min(1120px, 100% - 20px); }
+    body.embed .presets { margin-top: 4px; }
+    body.embed .takeaway { display: none; }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the ipo test lab</h1>
+    <p class="subtitle">the receiver sees four numbers. give it a rule, name the expected output, and you have a test.</p>
+
+    <div class="presets" role="group" aria-label="sensor cases">
+      <span class="label">sensor case</span>
+      <button class="ctrl" type="button" data-preset="clear" aria-pressed="true">clear red</button>
+      <button class="ctrl" type="button" data-preset="weak" aria-pressed="false">weak red</button>
+      <button class="ctrl" type="button" data-preset="mixed" aria-pressed="false">mixed light</button>
+      <button class="ctrl" type="button" data-preset="dark" aria-pressed="false">darkness</button>
+      <span class="hint">keys: 1&ndash;4 choose a case</span>
+    </div>
+
+    <section class="pipeline" aria-label="input, processing, and output">
+      <article class="panel">
+        <div class="panel-label"><span class="number">1</span><span>input</span></div>
+        <div class="sensor-preview" id="sensor-preview" aria-hidden="true"></div>
+        <div class="sliders">
+          <label><span class="channel">r</span><input id="r" type="range" min="0" max="255" value="203" aria-label="red sensor value"><output id="r-value">203</output></label>
+          <label><span class="channel">g</span><input id="g" type="range" min="0" max="255" value="41" aria-label="green sensor value"><output id="g-value">41</output></label>
+          <label><span class="channel">b</span><input id="b" type="range" min="0" max="255" value="57" aria-label="blue sensor value"><output id="b-value">57</output></label>
+          <label><span class="channel">c</span><input id="c" type="range" min="0" max="400" value="310" aria-label="clear sensor value"><output id="c-value">310</output></label>
+        </div>
+      </article>
+
+      <div class="connector" aria-hidden="true">&rarr;</div>
+
+      <article class="panel">
+        <div class="panel-label"><span class="number">2</span><span>processing</span></div>
+        <div class="function">classify(r, g, b, c)</div>
+        <div class="rule" aria-label="classification rule">
+          <div><span class="keyword">if</span> c &lt; min light <span class="arrow">&rarr;</span> off</div>
+          <div><span class="keyword">if</span> lead &lt; min lead <span class="arrow">&rarr;</span> uncertain</div>
+          <div><span class="keyword">else</span> <span class="arrow">&rarr;</span> strongest channel</div>
+        </div>
+        <label class="threshold"><span>min light</span><input id="min-light" type="range" min="0" max="200" value="80" aria-label="minimum light"><output id="min-light-value">80</output></label>
+        <label class="threshold"><span>min lead</span><input id="min-lead" type="range" min="0" max="100" value="30" aria-label="minimum lead"><output id="min-lead-value">30</output></label>
+      </article>
+
+      <div class="connector" aria-hidden="true">&rarr;</div>
+
+      <article class="panel">
+        <div class="panel-label"><span class="number">3</span><span>output</span></div>
+        <div class="caption" style="margin-top: 22px;">actual</div>
+        <div class="actual red" id="actual" aria-live="polite">red</div>
+        <div class="caption">expected</div>
+        <div class="expected-buttons" role="group" aria-label="expected output">
+          <button class="ctrl" type="button" data-expected="red" aria-pressed="true">red</button>
+          <button class="ctrl" type="button" data-expected="green" aria-pressed="false">green</button>
+          <button class="ctrl" type="button" data-expected="blue" aria-pressed="false">blue</button>
+          <button class="ctrl" type="button" data-expected="off" aria-pressed="false">off</button>
+          <button class="ctrl" type="button" data-expected="uncertain" aria-pressed="false">uncertain</button>
+        </div>
+        <div class="result pass" id="result" aria-live="polite"><span id="result-mark">&#10003;</span><span id="result-label">pass</span></div>
+      </article>
+    </section>
+
+    <div class="trace">
+      <code id="trace">(203, 41, 57, 310) &rarr; red</code>
+      <span>change the input or the rule. the test follows.</span>
+    </div>
+    <div class="takeaway">clear input plus expected output equals a test.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/input-processing-output.html">probleme l&ouml;sen mit computern</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>
