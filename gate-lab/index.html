@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>the gate lab</title>
-  <meta name="description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, make two gates remember a bit, then build the circuits yourself by dropping gates into place.">
+  <meta name="description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, and make two gates remember a bit.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LiFi Project · concept demos">
   <meta property="og:title" content="the gate lab">
-  <meta property="og:description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, make two gates remember a bit, then build the circuits yourself by dropping gates into place.">
+  <meta property="og:description" content="switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, and make two gates remember a bit.">
   <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/gate-lab/">
   <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/gate-lab/preview.png">
   <meta property="og:image:width" content="1200">
@@ -42,6 +42,8 @@
     .row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
     .row .rl { color: var(--gray); font-size: 13px; min-width: 96px; text-align: right; }
     .row .rv { font-family: var(--mono); color: var(--gray-light); font-size: 14px; min-width: 96px; }
+    .row .rv.wide { min-width: 340px; }
+    .readout { font-family: var(--mono); text-align: center; color: var(--gray-light); font-size: 15px; margin: 6px 0 2px; }
     .bits { display: flex; gap: 4px; }
 
     /* truth table */
@@ -53,18 +55,14 @@
     .truth td.miss { color: var(--red); }
     .truth td.hit { color: var(--green); }
 
-    /* gate palette and slots for the build station */
+    /* gate picker */
     .palette { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
     .chip {
       font-family: var(--mono); font-size: 14px; color: var(--gray-light);
       background: #101316; border: 1px solid var(--gray-dark); border-radius: 6px;
-      padding: 8px 14px; cursor: grab; user-select: none;
+      padding: 8px 14px; cursor: pointer; user-select: none;
     }
     .chip[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
-    .chip:active { cursor: grabbing; }
-    .slot-hint { text-align: center; color: var(--gray-dark); font-size: 12px; }
-    .verdict { text-align: center; font-size: 15px; margin-top: 10px; min-height: 22px; }
-    .verdict.ok { color: var(--green); }
 
     .note { text-align: center; color: var(--gray); font-size: 14px; margin: 12px auto 0; max-width: 720px; line-height: 1.5; }
     .note a.link { color: var(--blue); }
@@ -95,6 +93,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
