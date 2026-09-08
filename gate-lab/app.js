@@ -397,7 +397,7 @@ function renderFlipFlop(stage) {
   state.ff = simulate(c, { s: state.s, r: state.r }, state.ff);
   el("hint").textContent = "two nor gates, each feeding the other. switch set on and off again: q stays 1. do the same with reset: q stays 0. the circuit remembers.";
   stage.appendChild(bench(c, state.ff, flipSmall));
-  stage.appendChild(readout(state.s && state.r ? "set and reset at once: not allowed" : state.s ? "set → q = 1" : state.r ? "reset → q = 0" : `both off → q holds ${state.ff.q ?? 0}`));
+  stage.appendChild(readout(state.s && state.r ? '<span style="color: var(--red)">set and reset at once: not allowed</span>' : state.s ? "set → q = 1" : state.r ? "reset → q = 0" : `both off → q holds ${state.ff.q ?? 0}`));
   note(stage, "no clock, no memory chip: the bit lives in the loop between the two gates, as long as the power stays on. this is one bit of ram. see the register for eight of them.");
 }
 
