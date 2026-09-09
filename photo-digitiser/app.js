@@ -43,9 +43,17 @@ const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 const state = { resIdx: 5, depthIdx: 5 };
 const el = (id) => document.getElementById(id);
 
+/* Startfall aus der Adresse: ?picture=parrot&res=16&depth=c24
+ * So zeigt eine Folie genau den einen Fall, um den es dort geht. */
+const query = new URLSearchParams(location.search);
+const wunschRes = RESOLUTIONS.indexOf(Number(query.get("res")));
+if (wunschRes >= 0) state.resIdx = wunschRes;
+const wunschDepth = DEPTHS.findIndex((d) => d.key === query.get("depth"));
+if (wunschDepth >= 0) state.depthIdx = wunschDepth;
+
 // --- Fotomotive --------------------------------------------------------------
 const MOTIFS = ["parrot", "sunset", "lighthouse"];
-let motif = "parrot";
+let motif = MOTIFS.includes(query.get("picture")) ? query.get("picture") : "parrot";
 const origCv = el("cv-orig");
 const photos = {};
 
@@ -207,4 +215,12 @@ el("motifs").addEventListener("click", (ev) => {
 });
 
 // --- Start ------------------------------------------------------------------
-Promise.all(MOTIFS.map(loadMotif)).then(render);
+function bedienelementeSetzen() {
+  el("in-res").value = String(state.resIdx);
+  const knoepfe = el("seg-depth").querySelectorAll("button");
+  knoepfe.forEach((b, i) => b.setAttribute("aria-pressed", i === state.depthIdx ? "true" : "false"));
+  el("motifs").querySelectorAll("button").forEach((b) =>
+    b.setAttribute("aria-pressed", b.dataset.m === motif ? "true" : "false"));
+}
+
+Promise.all(MOTIFS.map(loadMotif)).then(() => { bedienelementeSetzen(); render(); });
