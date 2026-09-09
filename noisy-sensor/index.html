@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>the noisy sensor · lifi concept demos</title>
-  <meta name="description" content="Take one reading, then a series: watch the distribution emerge and see averages become calmer while individual readings keep jumping.">
+  <meta name="description" content="Send a symbol over a noisy link and let the same readings decide it three times: alone, averaged over five, averaged over ten. Fewer wrong decisions, less speed.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LiFi Project · concept demos">
   <meta property="og:title" content="the noisy sensor">
-  <meta property="og:description" content="One reading is a draw. A series reveals the distribution.">
+  <meta property="og:description" content="Send a symbol over a noisy link and let the same readings decide it three times: alone, averaged over five, averaged over ten. Fewer wrong decisions, less speed.">
   <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/noisy-sensor/">
   <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/noisy-sensor/preview.png">
   <meta property="og:image:width" content="1200">
@@ -19,43 +19,72 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/style.css">
   <style>
-    main { width: min(1080px, 100% - 32px); }
+    main { width: min(1120px, 100% - 32px); }
     .lab { border: 1px solid var(--gray-dark); border-radius: 10px; padding: 18px 22px 20px; }
-    .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
-    .controls .label { color: var(--gray); font-size: 14px; margin-left: 12px; }
-    .controls .label:first-child { margin-left: 0; }
+
+    .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .controls .label { color: var(--gray); font-size: 14px; margin-left: 14px; }
     button.ctrl.primary { color: var(--bg); background: var(--yellow); border-color: var(--yellow); font-weight: 500; }
     button.ctrl[aria-pressed="true"] { color: var(--white); border-color: var(--blue); box-shadow: inset 0 -2px 0 var(--blue); }
-    button.ctrl.primary[aria-pressed="true"] { color: var(--bg); border-color: var(--yellow); box-shadow: none; }
-    .plot { position: relative; height: 230px; border-left: 1px solid var(--gray-dark); border-bottom: 1px solid var(--gray-dark); overflow: hidden; }
-    .plot::before { content: ""; position: absolute; left: 0; right: 0; top: 48%; height: 1px; background: var(--gray-dark); }
-    .tick { position: absolute; bottom: 6px; color: var(--gray); font: 12px var(--mono); transform: translateX(-50%); }
-    .tick.start { transform: none; }
-    .tick.end { transform: translateX(-100%); }
-    .point { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--gray-light); transform: translate(-50%, -50%); transition: left 180ms ease, top 180ms ease; }
-    .point.old { background: var(--gray); }
-    .point.current { width: 16px; height: 16px; background: var(--yellow); box-shadow: 0 0 18px rgb(255 210 63 / .35); }
-    .mean-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--blue); transform: translateX(-50%); display: none; }
-    .mean-label { position: absolute; top: 8px; color: var(--blue); font: 13px var(--mono); transform: translateX(8px); display: none; }
-    .histogram { height: 86px; display: grid; grid-template-columns: repeat(16, 1fr); align-items: end; gap: 3px; margin: 14px 0 0; }
-    .bin { min-height: 1px; background: var(--gray-dark); transition: height 180ms ease; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
-    .stat { border-top: 1px solid var(--gray-dark); padding-top: 8px; }
-    .stat .name { color: var(--gray); font-size: 13px; }
-    .stat .value { color: var(--white); font: 20px var(--mono); margin-top: 3px; }
-    .stat.accent .value { color: var(--blue); }
-    .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--gray); font-size: 16px; }
+    .sent { font: 14px var(--mono); color: var(--gray); margin-left: 4px; }
+    .sent b { color: var(--yellow); font-weight: 500; }
+
+    /* drei Spuren auf einer gemeinsamen Achse: Name, Punktwolke, Zahlen */
+    .lanes { display: grid; grid-template-columns: 152px 1fr 178px; align-items: stretch; column-gap: 18px; }
+    .lane-name { display: flex; flex-direction: column; justify-content: center; }
+    .lane-name .n { font: 17px var(--mono); color: var(--white); white-space: nowrap; }
+    .lane-name .sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+    .bandhead { position: relative; height: 24px; }
+    .bandhead span { position: absolute; bottom: 2px; font-size: 13px; transform: translateX(-50%); white-space: nowrap; }
+    .bandhead .off { color: var(--gray); }
+    .bandhead .on { color: var(--yellow); }
+    .bandhead .thr { color: var(--blue); }
+    .bandhead .side { font-size: 12px; transform: none; }
+    .bandhead .side.off { left: 0; color: var(--gray); }
+    .bandhead .side.on { left: auto; right: 0; color: rgb(255 210 63 / .7); }
+
+    .lane { position: relative; height: 88px; border-bottom: 1px solid var(--gray-dark); overflow: hidden; }
+    /* die beiden Entscheidungsbereiche links und rechts der Schwelle */
+    .region { position: absolute; top: 0; bottom: 0; }
+    .region.off { left: 0; background: rgb(125 134 143 / .11); }
+    .region.on { right: 0; background: rgb(255 210 63 / .07); }
+    /* wo ein Symbol im Mittel ankommt */
+    .centre { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dotted var(--gray); }
+    .centre.on { border-color: rgb(255 210 63 / .55); }
+    .thrline { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--blue); transform: translateX(-1px); }
+    .dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--gray-light); transform: translate(-50%, 50%); }
+    .dot.wrong { background: var(--red); }
+    .dot.current { width: 12px; height: 12px; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--white); }
+    .dot.current.wrong { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--red); }
+
+    .lane-stats { display: flex; flex-direction: column; justify-content: center; }
+    .lane-stats .wrong { font: 17px var(--mono); color: var(--gray-light); }
+    .lane-stats .wrong b { font-weight: 500; }
+    .lane-stats .wrong.some b { color: var(--red); }
+    .lane-stats .sub { font: 13px var(--mono); color: var(--gray); margin-top: 3px; }
+
+    .axis { position: relative; height: 26px; }
+    .axis span { position: absolute; top: 5px; color: var(--gray); font: 12px var(--mono); transform: translateX(-50%); }
+    .axis span.start { transform: none; }
+    .axis span.end { transform: translateX(-100%); }
+    .axis-name { font-size: 12px; color: var(--gray); align-self: start; padding-top: 5px; }
+
+    .note { color: var(--gray); font-size: 13px; margin: 16px 2px 0; max-width: 62em; }
+    .simulation-note { color: var(--gray-dark); font-size: 13px; margin: 6px 2px 0; }
     .takeaway { color: var(--yellow); font-size: 20px; margin: 20px 2px 0; }
-    .simulation-note { color: var(--gray); font-size: 13px; margin-top: 12px; }
-    body.embed main { width: min(1080px, 100% - 16px); }
-    body.embed .lab { border: 0; padding: 8px 10px 4px; }
-    body.embed .plot { height: 210px; }
-    body.embed .histogram { height: 70px; }
-    body.embed .controls { margin-bottom: 10px; }
-    @media (max-width: 720px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .plot { height: 190px; }
-      .controls .label { width: 100%; margin-left: 0; margin-top: 4px; }
+
+    body.embed main { width: min(1120px, 100% - 16px); }
+    body.embed .lab { border: 0; padding: 6px 10px 4px; }
+    body.embed .lane { height: 76px; }
+    body.embed .controls { margin-bottom: 14px; }
+    body.embed .note { margin-top: 12px; }
+
+    @media (max-width: 780px) {
+      .lanes { grid-template-columns: 96px 1fr; }
+      .lane-stats { grid-column: 2; padding: 6px 0 12px; }
+      .lane { height: 72px; }
+      .controls .label { width: 100%; margin-left: 0; }
     }
   </style>
 </head>
@@ -67,42 +96,38 @@
 
   <main>
     <h1>the noisy sensor</h1>
-    <p class="subtitle">one reading is a draw. a series reveals the distribution.</p>
+    <p class="subtitle">the same readings, decided three ways: alone, averaged over five, averaged over ten.</p>
 
-    <section class="lab" aria-label="simulated sensor measurement lab">
+    <section class="lab" aria-label="simulated link with three decision strategies">
       <div class="controls">
-        <button class="ctrl primary" id="measure" type="button">measure</button>
-        <span class="label">average n readings</span>
-        <button class="ctrl average" type="button" data-n="1" aria-pressed="true">1</button>
-        <button class="ctrl average" type="button" data-n="5" aria-pressed="false">5</button>
-        <button class="ctrl average" type="button" data-n="10" aria-pressed="false">10</button>
+        <button class="ctrl primary" id="send" type="button">send symbol</button>
+        <button class="ctrl" id="burst" type="button">send 25</button>
         <button class="ctrl" id="reset" type="button">reset</button>
-        <span class="hint">space / m · measure &nbsp; r · reset &nbsp; 1 / 5 / 0 · average</span>
+        <span class="label">sensor noise</span>
+        <button class="ctrl noise" type="button" data-sigma="6" data-name="low" aria-pressed="false">low</button>
+        <button class="ctrl noise" type="button" data-sigma="11" data-name="medium" aria-pressed="true">medium</button>
+        <button class="ctrl noise" type="button" data-sigma="17" data-name="high" aria-pressed="false">high</button>
+        <span class="sent" id="sent">last symbol: <b>—</b></span>
+        <span class="hint">space · send &nbsp; b · send 25 &nbsp; r · reset &nbsp; 1 / 2 / 3 · noise</span>
       </div>
 
-      <div class="plot" id="plot" aria-label="measurement values from 170 to 230">
-        <div class="empty" id="empty">press measure</div>
-        <div class="mean-line" id="mean-line"></div>
-        <div class="mean-label" id="mean-label">mean</div>
-        <span class="tick start" style="left: 0%">170</span>
-        <span class="tick" style="left: 25%">185</span>
-        <span class="tick" style="left: 50%">200</span>
-        <span class="tick" style="left: 75%">215</span>
-        <span class="tick end" style="left: 100%">230</span>
-      </div>
-      <div class="histogram" id="histogram" aria-hidden="true"></div>
-
-      <div class="stats" aria-live="polite">
-        <div class="stat"><div class="name">outputs</div><div class="value" id="count">0</div></div>
-        <div class="stat"><div class="name">current</div><div class="value" id="current">—</div></div>
-        <div class="stat accent"><div class="name">mean</div><div class="value" id="mean">—</div></div>
-        <div class="stat"><div class="name">min … max</div><div class="value" id="range">—</div></div>
+      <div class="lanes" id="lanes">
+        <div></div>
+        <div class="bandhead" id="bandhead">
+          <span class="off" id="head-off">led off</span>
+          <span class="thr" id="head-thr">threshold</span>
+          <span class="on" id="head-on">led on</span>
+          <span class="side off">reads as off</span>
+          <span class="side on">reads as on</span>
+        </div>
+        <div></div>
       </div>
 
-      <p class="simulation-note embed-hide">simulated readings — your setup supplies the real distribution.</p>
+      <p class="note">all three lanes read the same sensor at the same moment. they differ only in how many of those readings they average before deciding. a red dot is a wrong decision: that reading landed on the far side of the threshold. <span class="embed-hide">the plot keeps the last 40 symbols, the numbers count every one.</span></p>
+      <p class="simulation-note embed-hide">simulated readings — your own setup supplies the real numbers.</p>
     </section>
 
-    <div class="takeaway">one reading is a guess. a series is evidence.</div>
+    <div class="takeaway">one reading is a guess. a series is evidence, and it costs you time.</div>
   </main>
 
   <div class="demo-footer">
@@ -110,6 +135,6 @@
     <span><a href="../">all demos</a></span>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
