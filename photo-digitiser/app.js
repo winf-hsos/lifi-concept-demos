@@ -29,6 +29,8 @@ const DEPTHS = [
     desc: "2 colours — fax machines, e-paper price tags" },
   { key: "grey2", label: "4 greys",   bits: 2,
     desc: "4 shades of grey — the original game boy display" },
+  { key: "c4",    label: "4-bit",     bits: 4,
+    desc: "16 colours — the ega palette, early windows" },
   { key: "grey",  label: "greyscale", bits: 8,
     desc: "256 shades of grey — scanners, x-ray images" },
   { key: "c8",    label: "8-bit",     bits: 8,
@@ -38,9 +40,27 @@ const DEPTHS = [
   { key: "c24",   label: "24-bit",    bits: 24,
     desc: "16.7 million colours (8+8+8) — today's standard" },
 ];
+// Die sechzehn Farben der EGA-Palette: acht Grundfarben, jede einmal dunkel
+// und einmal hell. Bei 4 bit wird jeder Punkt der naechstliegenden zugeordnet.
+const EGA = [
+  [0, 0, 0], [0, 0, 170], [0, 170, 0], [0, 170, 170],
+  [170, 0, 0], [170, 0, 170], [170, 85, 0], [170, 170, 170],
+  [85, 85, 85], [85, 85, 255], [85, 255, 85], [85, 255, 255],
+  [255, 85, 85], [255, 85, 255], [255, 255, 85], [255, 255, 255],
+];
+
+function naechsteEga(r, g, b) {
+  let best = EGA[0], bestAbstand = Infinity;
+  for (const farbe of EGA) {
+    const abstand = (r - farbe[0]) ** 2 + (g - farbe[1]) ** 2 + (b - farbe[2]) ** 2;
+    if (abstand < bestAbstand) { bestAbstand = abstand; best = farbe; }
+  }
+  return best;
+}
+
 const LINK_BPS = 30;               // mittlere Challenge-Groessenordnung
 
-const state = { resIdx: 5, depthIdx: 5 };
+const state = { resIdx: 5, depthIdx: 6 };
 const el = (id) => document.getElementById(id);
 
 /* Startfall aus der Adresse: ?picture=parrot&res=16&depth=c24
@@ -114,6 +134,9 @@ function digitise() {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       const q = Math.round(lum / 255 * 3) * 85;
       d[i] = d[i + 1] = d[i + 2] = q;
+    } else if (depth.key === "c4") {
+      const nah = naechsteEga(d[i], d[i + 1], d[i + 2]);
+      d[i] = nah[0]; d[i + 1] = nah[1]; d[i + 2] = nah[2];
     } else if (depth.key === "grey") {
       const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       d[i] = d[i + 1] = d[i + 2] = Math.round(lum);
@@ -192,7 +215,7 @@ DEPTHS.forEach((depth, i) => {
 document.addEventListener("keydown", (ev) => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "INPUT") return;
-  if (ev.key >= "1" && ev.key <= "6") {
+  if (ev.key >= "1" && ev.key <= "7") {
     seg.querySelectorAll("button")[Number(ev.key) - 1].click();
   } else if (ev.key === "ArrowLeft" && state.resIdx > 0) {
     state.resIdx -= 1;
