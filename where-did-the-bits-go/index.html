@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>where did the bits go?</title>
+  <meta name="description" content="send a photo over a framed link: watch every symbol cross while headers, checks and retries consume time without growing the picture.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="where did the bits go?">
+  <meta property="og:description" content="send a photo over a framed link: watch every symbol cross while headers, checks and retries consume time without growing the picture.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/where-did-the-bits-go/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/where-did-the-bits-go/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 14px 24px;
+      margin: 8px 0 22px;
+    }
+    .setting .label {
+      color: var(--gray);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+    .setting .reading {
+      color: var(--gray-light);
+      font-family: var(--mono);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .setting, .picture { min-width: 0; }
+    .seg { display: flex; gap: 5px; }
+    .seg button.ctrl { flex: 1; padding: 6px 8px; font-size: 13px; }
+    .seg button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+
+    .transfer {
+      display: grid;
+      grid-template-columns: minmax(180px, 230px) minmax(300px, 1fr) minmax(180px, 230px);
+      align-items: center;
+      gap: 18px;
+      margin: 4px 0 18px;
+    }
+    .picture .label, .channel .label {
+      color: var(--gray);
+      font-size: 12px;
+      text-align: center;
+      margin-bottom: 7px;
+    }
+    .picture canvas {
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      background: #111416;
+    }
+    .picture .progress {
+      min-height: 17px;
+      margin-top: 6px;
+      color: var(--gray-dark);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: center;
+    }
+    .channel { min-width: 0; }
+    .symbol-track {
+      position: relative;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-top: 1px solid var(--gray-dark);
+      border-bottom: 1px solid var(--gray-dark);
+    }
+    .symbol-track::before {
+      content: "";
+      position: absolute;
+      left: 50%; top: 8px; bottom: 8px;
+      width: 1px;
+      background: var(--yellow);
+      box-shadow: 0 0 14px rgba(255, 210, 63, 0.45);
+    }
+    .symbol-track::after {
+      content: "light link";
+      position: absolute;
+      top: 3px; left: calc(50% + 7px);
+      color: var(--gray-dark);
+      font-size: 10px;
+    }
+    .symbols {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      align-items: center;
+    }
+    .symbol {
+      min-width: 0;
+      text-align: center;
+      font-family: var(--mono);
+      color: var(--gray-light);
+      border-bottom: 3px solid var(--gray-dark);
+      padding: 9px 1px 7px;
+      transition: color 120ms, border-color 120ms, transform 120ms;
+    }
+    .symbol .shape { display: block; color: var(--white); font-size: 24px; line-height: 1; }
+    .symbol .name { display: block; margin-top: 5px; font-size: 10px; }
+    .symbol.payload { border-color: var(--blue); }
+    .symbol.check { border-color: var(--yellow); }
+    .symbol.failed { color: var(--red); border-color: var(--red); }
+    .current-symbol {
+      min-height: 34px;
+      margin-top: 8px;
+      color: var(--gray);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .current-symbol strong { color: var(--white); font-family: var(--mono); font-weight: normal; }
+    .current-symbol .bad { color: var(--red); }
+    .current-symbol .good { color: var(--green); }
+
+    .packet-wrap { margin: 16px 0 12px; }
+    .packet-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--gray);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .packet-head .mono { color: var(--gray-light); }
+    .packet {
+      height: 54px;
+      display: flex;
+      border: 1px solid var(--gray-dark);
+      border-radius: 7px;
+      overflow: hidden;
+      position: relative;
+    }
+    .packet.failed { border-color: var(--red); }
+    .packet.accepted { border-color: var(--green); }
+    .segment {
+      min-width: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid var(--gray-dark);
+      color: var(--gray);
+      font-size: 11px;
+      background: #0b0d0f;
+    }
+    .segment:last-child { border-right: 0; }
+    .segment.payload { min-width: 150px; }
+    .segment .count { font-family: var(--mono); color: var(--gray-light); margin-top: 3px; }
+    .segment.active { background: #15191c; color: var(--white); }
+    .segment.active.payload { box-shadow: inset 0 -4px var(--blue); }
+    .segment.active.check { box-shadow: inset 0 -4px var(--yellow); }
+    .packet-cursor {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      left: 0;
+      background: var(--yellow);
+      pointer-events: none;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px 22px;
+      padding: 16px 0 12px;
+      border-top: 1px solid var(--gray-dark);
+    }
+    .stat .label { color: var(--gray); font-size: 12px; }
+    .stat .value { color: var(--white); font-family: var(--mono); font-size: clamp(20px, 3vw, 28px); margin: 2px 0; }
+    .stat .note { color: var(--gray-dark); font-size: 11px; line-height: 1.3; }
+
+    .ledger { margin: 8px 0 16px; }
+    .ledger-head {
+      display: flex; justify-content: space-between; gap: 10px;
+      color: var(--gray); font-size: 12px; margin-bottom: 6px;
+    }
+    .ledger-bar {
+      height: 18px; display: flex; overflow: hidden;
+      border: 1px solid var(--gray-dark); border-radius: 5px; background: #101315;
+    }
+    .ledger-bar span { min-width: 0; transition: flex-basis 180ms; }
+    .ledger-bar .useful { background: var(--green); }
+    .ledger-bar .overhead { background: var(--gray); }
+    .ledger-bar .rejected { background: var(--red); }
+    .ledger-key {
+      display: flex; flex-wrap: wrap; gap: 8px 22px;
+      margin-top: 7px; color: var(--gray); font-size: 12px;
+    }
+    .ledger-key span::before {
+      content: ""; display: inline-block; width: 8px; height: 8px;
+      margin-right: 6px; border-radius: 2px; background: var(--gray);
+    }
+    .ledger-key .useful::before { background: var(--green); }
+    .ledger-key .rejected::before { background: var(--red); }
+    .ledger-key b { font-family: var(--mono); color: var(--gray-light); font-weight: normal; }
+
+    .controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .controls .speed { display: flex; gap: 5px; margin-left: 12px; }
+    .controls .speed button.ctrl { padding: 6px 10px; font-size: 13px; }
+    .controls .speed button.ctrl[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+    .controls .hint { flex-basis: 100%; text-align: center; margin-top: 4px; }
+    .takeaway { color: var(--yellow); text-align: center; margin: 22px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+
+    @media (max-width: 800px) {
+      .settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .transfer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .channel { grid-column: 1 / -1; grid-row: 2; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .setting input[type="range"] { min-width: 0; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .symbol:nth-child(-n+2) { display: none; }
+      .symbols { grid-template-columns: repeat(5, 1fr); }
+      .packet .segment { min-width: 0; }
+      .packet .segment.payload { min-width: 96px; }
+      .packet-head { font-size: 11px; }
+      .packet-head > span { min-width: 0; }
+      .packet-head > span:last-child { text-align: right; }
+    }
+    @media (max-width: 380px) {
+      .settings { grid-template-columns: 1fr; }
+    }
+    body.embed main { width: min(1120px, 100% - 24px); }
+    body.embed .transfer { grid-template-columns: minmax(150px, 210px) minmax(300px, 1fr) minmax(150px, 210px); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>where did the bits go?</h1>
+    <p class="subtitle">send the course photo through a framed link. the light keeps working even when the picture does not grow.</p>
+
+    <div class="settings embed-hide">
+      <div class="setting">
+        <div class="label">channel alphabet</div>
+        <div class="seg" id="alphabet" role="group" aria-label="channel alphabet size">
+          <button class="ctrl" type="button" data-value="2" aria-pressed="false">2</button>
+          <button class="ctrl" type="button" data-value="4" aria-pressed="true">4</button>
+          <button class="ctrl" type="button" data-value="8" aria-pressed="false">8</button>
+        </div>
+        <div class="reading" id="rd-alphabet">4 symbols · 2 bit/symbol</div>
+      </div>
+      <div class="setting">
+        <div class="label">symbol rate</div>
+        <input type="range" id="in-rate" min="2" max="20" step="1" value="5" aria-label="symbols per second">
+        <div class="reading" id="rd-rate">5 symbols/s</div>
+      </div>
+      <div class="setting">
+        <div class="label">payload per packet</div>
+        <div class="seg" id="payload" role="group" aria-label="payload symbols per packet">
+          <button class="ctrl" type="button" data-value="16" aria-pressed="false">16</button>
+          <button class="ctrl" type="button" data-value="32" aria-pressed="true">32</button>
+          <button class="ctrl" type="button" data-value="64" aria-pressed="false">64</button>
+        </div>
+        <div class="reading" id="rd-payload">32 payload symbols</div>
+      </div>
+      <div class="setting">
+        <div class="label">packets that fail their check</div>
+        <input type="range" id="in-error" min="0" max="30" step="1" value="8" aria-label="failed packets in percent">
+        <div class="reading" id="rd-error">8 % must be sent again</div>
+      </div>
+    </div>
+
+    <div class="transfer">
+      <div class="picture">
+        <div class="label">sender · 2 kb photo</div>
+        <canvas id="source" width="256" height="256" aria-label="complete photo at the sender"></canvas>
+      </div>
+
+      <div class="channel">
+        <div class="label">one abstract channel symbol at a time</div>
+        <div class="symbol-track">
+          <div class="symbols" id="symbols" aria-hidden="true"></div>
+        </div>
+        <div class="current-symbol" id="current-symbol" aria-live="polite"></div>
+      </div>
+
+      <div class="picture">
+        <div class="label">receiver · checked payload only</div>
+        <canvas id="received" width="256" height="256" aria-label="photo data accepted by the receiver"></canvas>
+        <div class="progress" id="photo-progress">0 / 16,384 bits accepted</div>
+      </div>
+    </div>
+
+    <div class="packet-wrap">
+      <div class="packet-head">
+        <span id="packet-label">packet 1</span>
+        <span class="mono" id="packet-result">sending</span>
+      </div>
+      <div class="packet" id="packet">
+        <div class="segment preamble" data-part="preamble" style="flex: 6">
+          <span>preamble</span><span class="count">6 sym</span>
+        </div>
+        <div class="segment header" data-part="header" style="flex: 4">
+          <span>header</span><span class="count">4 sym</span>
+        </div>
+        <div class="segment payload" data-part="payload" id="packet-payload" style="flex: 32">
+          <span>photo data</span><span class="count" id="payload-count">32 sym</span>
+        </div>
+        <div class="segment check" data-part="check" style="flex: 4">
+          <span>check</span><span class="count">4 sym</span>
+        </div>
+        <span class="packet-cursor" id="packet-cursor" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">raw channel rate</div>
+        <div class="value" id="st-raw">10 bit/s</div>
+        <div class="note">symbol rate × bits per symbol</div>
+      </div>
+      <div class="stat">
+        <div class="label">effective photo rate</div>
+        <div class="value" id="st-good">6.4 bit/s</div>
+        <div class="note">after framing and expected retries</div>
+      </div>
+      <div class="stat">
+        <div class="label">sent / useful</div>
+        <div class="value" id="st-count">0 / 0</div>
+        <div class="note">symbols sent / payload bits accepted</div>
+      </div>
+      <div class="stat">
+        <div class="label">estimated time left</div>
+        <div class="value" id="st-eta">42:43</div>
+        <div class="note">real link time, not display time</div>
+      </div>
+    </div>
+
+    <div class="ledger">
+      <div class="ledger-head">
+        <span>where the transmitted symbols went</span>
+        <span class="mono" id="ledger-total">0 symbols</span>
+      </div>
+      <div class="ledger-bar" aria-hidden="true">
+        <span class="useful" id="bar-useful"></span>
+        <span class="overhead" id="bar-overhead"></span>
+        <span class="rejected" id="bar-rejected"></span>
+      </div>
+      <div class="ledger-key">
+        <span class="useful">accepted photo data <b id="key-useful">0</b></span>
+        <span class="overhead">framing <b id="key-overhead">0</b></span>
+        <span class="rejected">failed attempts <b id="key-rejected">0</b></span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl" id="btn-pause" type="button">pause</button>
+      <button class="ctrl" id="btn-reset" type="button">start again</button>
+      <div class="speed" id="speed" role="group" aria-label="display speed">
+        <button class="ctrl" type="button" data-value="1" aria-pressed="false">1×</button>
+        <button class="ctrl" type="button" data-value="100" aria-pressed="true">100×</button>
+        <button class="ctrl" type="button" data-value="500" aria-pressed="false">500×</button>
+      </div>
+      <span class="hint">display speed only changes the animation · space pause · r restart</span>
+    </div>
+
+    <div class="takeaway">the light never stopped. the picture did.</div>
+    <div style="color: var(--gray-dark); font-size: 12px; text-align: right;">photo: ai-generated (gpt-image-2)</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/throughput-and-limits.html">throughput and limits</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>

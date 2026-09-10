@@ -25,6 +25,8 @@ Diskussionsgrundlage, Stand 02.09.2026. Je Konzept die Frage: Was lässt sich du
 
 **Pixel Painter** (Codesysteme, live): 8x8-Raster mit einem Bit je Pixel, daneben die acht Bytes binaer und als editierbare Hexfelder, beide Richtungen live; "break a byte" und "flip one bit" zeigen den Schaden rot, "repair" holt den heilen Stand zurueck.
 
+**The Prefix Trap** (Codesysteme, live): der Code, der nicht funktioniert, zum Selbermachen. Vier eigene Codewoerter fuer a bis d, ein getipptes Wort, darunter die nackte Bitfolge und **alle** Zerlegungen, die der Empfaenger daraus lesen koennte. Vorbelegung a=0, b=01, c=10, d=11 mit dem Wort "bad": zwei Lesarten. Der Befund nennt, welches Codewort welches beginnt, sagt aber nicht, wie es richtig geht; wer feste Laenge oder Praefixfreiheit selbst herstellt, sieht die Liste auf eins schrumpfen. Startwerte in der Adresse (?a=&b=&c=&d=&word=).
+
 **Drift Simulator** (Abtastung und Synchronisation, live): Sender legt eine Farbfolge in Zeitschlitze, die Empfängeruhr geht einstellbar falsch; Abtastpunkte wandern sichtbar, die Statistik zeigt den Versatz und die halbe-Schlitz-Grenze, eine zuschaltbare Sync-Marke richtet neu aus und kostet sichtbar Rate. Farben ohne Bit-Zuordnung (Priming-Regel).
 
 **Inside a File** (Dateien, live, 07.09.2026): eines der drei Fotomotive als echte 24-Bit-Bitmap mit 8×8, 16×16 oder 32×32 Pixeln (822 Bytes bei 16×16), rechts als Hex-Editor mit Positionsspalte, Dateikopf, Infokopf und Pixeldaten unterschieden, Kopffelder unterstrichen und beim Überfahren erklärt (Kennung, Dateigröße, Startposition, Breite, Höhe, Farbtiefe), links das Bild, das ein echter Dekoder aus genau diesen Bytes macht. Klick auf ein Pixel markiert seine drei Bytes (Blau, Grün, Rot, unterste Zeile zuerst), Klick auf ein Byte sein Pixel; ein Byte wird per Tastatur geändert (zwei Hexziffern oder + und −), das Bild folgt sofort. Kaputter Kopf: der Betrachter verweigert mit Begründung; falsche Breite: Streifen; „open as text“ zeigt die Bytes als Zeichensalat. Nachfolger der Hex-Editor-Folien aus dem alten Satz „Experiment 04: Images“.
@@ -59,7 +61,7 @@ Die animierte Fassung von Deck 09, Folie 7: oben der Sender mit Zeitschlitzen, d
 
 Ein 8-mal-8-Raster zum Malen mit einem Bit je Pixel; daneben entstehen live die acht Bytes, binär und hex, und umgekehrt: Wer die Hexwerte edittiert, malt damit. Erweiterungsknopf „ein Byte kaputt": ein zufälliges Byte kippt und das Bild zeigt den Schaden. **Didaktischer Kern:** die Doppelrichtung Bild-zu-Bytes und Bytes-zu-Bild, also cs-008/cs-010 zum Anfassen, und nebenbei die Brücke zum Byte Switchboard. Bewährtes Vorbild: klassische Bitmap-Editoren aus CS-Unplugged-Material. **Aufwand: klein bis mittel. Priorität: hoch.**
 
-### Codesysteme, zweite Idee: „Präfix-Falle"
+### Codesysteme, zweite Idee: „Präfix-Falle" (gebaut am 10.09.2026, siehe Bestand)
 
 Der Code, der nicht funktioniert, als Spiel: Der Besucher legt selbst Codewörter für a, b, c fest (Vorbelegung a=0, b=01, c=10), tippt eine Nachricht, und die Demo zeigt **alle** gültigen Lesarten der entstehenden Bitfolge. Wer einen präfixfreien Code baut, sieht die Lesartenliste auf eins schrumpfen. **Didaktischer Kern:** cs-004 erlebbar; die Einsicht „der Empfänger kann die Grenze nicht sehen" entsteht beim eigenen Scheitern. **Aufwand: klein. Priorität: mittel** (Folie 9 von Deck 08 trägt viel davon schon).
 
@@ -79,9 +81,9 @@ Die Demo denkt sich eines von N Dingen (N einstellbar: 8, 32, 100); der Besucher
 
 Eine gerahmte Nachricht mit wählbarer Absicherung (nichts, Paritätsbit, Prüfsumme, Wiederholung); der Besucher kippt gezielt oder zufällig Bits und sieht, was der Empfänger merkt, was er repariert und was durchrutscht (zwei Kipper bei Parität!). Ein Zähler für den Overhead zeigt den Preis jeder Stufe. **Didaktischer Kern:** Erkennungsgrenzen und Kosten von Redundanz, die Kernfrage der Challenge-3-Konzepte. **Aufwand: mittel. Priorität: hoch, sobald Sitzung 8/9 näher rückt.**
 
-### Durchsatz und Grenzen: „Der Challenge-4-Rechner"
+### Durchsatz und Grenzen: „where did the bits go?" (erster Prototyp gebaut am 09.09.2026, `where-did-the-bits-go/`)
 
-Schieberegler für Farbzahl, Symbolrate, Markenanteil und Fehlerquote (mit Wiederholungs-Strategie); heraus kommt der effektive Durchsatz und live die Übertragungsdauer der 2-KB-Datei. **Didaktischer Kern:** ca-004 und die b-Unterscheidung von Deck 09, Folie 19, als Planungswerkzeug für die eigene Challenge-4-Strategie. **Aufwand: klein. Priorität: mittel** (bewusst neutral halten: rechnet Konsequenzen aus, empfiehlt keine Strategie).
+Das bekannte Foto läuft als 2-KB-Nutzlast über eine gerahmte Strecke. Oben passieren abstrakte Kanalsymbole `s₀` bis `s₇` mit zusätzlichen Formen den Lichtspalt; bewusst keine LED-Farben und keine vorgegebene Farbe-zu-Bit-Zuordnung. Darunter zeigt das aktuelle Paket Präambel, Kopf, Fotodaten und Prüfung. Das Empfängerfoto wächst erst, wenn ein vollständiges Paket seine Prüfung bestanden hat. Scheitert sie, ist der ganze Versuch sichtbar rot und wird wiederholt: Die Strecke hat währenddessen gearbeitet, das Foto aber nicht. Drei getrennte Bilanzen zählen angenommene Nutzdatensymbole, Rahmenanteil und verworfene Versuche; Rohdatenrate, erwartete effektive Bildrate und Restzeit stehen daneben. Regler: Alphabetgröße, Symbolrate, Nutzlast je Paket und Anteil scheiternder Pakete; die Anzeigegeschwindigkeit verändert nur die Animation, nicht die berechneten Werte. **Didaktischer Kern:** Symbolrate ist nicht Nutzdatenrate; Protokoll und Wiederholungen verbrauchen reale Übertragungszeit. **Offen zur Diskussion:** Sind Paketband und Bilanz auf einen Blick verständlich? Ist die direkte Vorgabe einer Paket-Fehlerwahrscheinlichkeit ehrlich und hilfreich genug? Braucht die Demo überhaupt veränderbare Rahmengrößen oder sollte sie nur zwei feste Fälle vergleichen?
 
 ### Kompression: „Nachricht schrumpfen"
 

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the prefix trap</title>
+  <meta name="description" content="write your own code words, send a word, and see every reading the receiver could pick. get the list down to one and you have built a code that works.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the prefix trap">
+  <meta property="og:description" content="write your own code words, send a word, and see every reading the receiver could pick. get the list down to one and you have built a code that works.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/prefix-trap/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/prefix-trap/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .bench {
+      display: flex;
+      gap: clamp(24px, 6vw, 64px);
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin: 22px 0 4px;
+    }
+
+    .panel-head {
+      color: var(--gray);
+      font-size: 13px;
+      height: 22px;
+    }
+
+    /* linke Spalte: das Codebuch */
+    .book { display: grid; grid-template-columns: auto auto auto; gap: 8px 14px; align-items: center; }
+    .book .ch { font-family: var(--mono); font-size: 20px; color: var(--white); }
+    .book .eq { color: var(--gray-dark); font-family: var(--mono); }
+    .book input {
+      width: 100px;
+      font-family: var(--mono);
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-align: center;
+      color: var(--white);
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      padding: 6px 0;
+    }
+    .book input:focus { outline: 2px solid var(--blue); border-color: var(--blue); }
+    .book input.clash { border-color: var(--red); color: var(--red); }
+
+    /* rechte Spalte: die Nachricht */
+    .msg input {
+      width: 220px;
+      font-family: var(--mono);
+      font-size: 20px;
+      letter-spacing: 3px;
+      color: var(--white);
+      background: #14171a;
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+    .msg input:focus { outline: 2px solid var(--blue); border-color: var(--blue); }
+    .msg .sent {
+      font-family: var(--mono);
+      font-size: clamp(20px, 3.4vw, 30px);
+      letter-spacing: 3px;
+      color: var(--gray-light);
+      margin-top: 18px;
+      min-height: 40px;
+      word-break: break-all;
+    }
+    .msg .sentnote { color: var(--gray-dark); font-size: 12px; margin-top: 2px; }
+
+    /* der Befund */
+    .verdict {
+      margin: 26px 0 6px;
+      font-family: var(--mono);
+      font-size: 20px;
+      color: var(--red);
+    }
+    .verdict.unique { color: var(--green); }
+    .verdict .mark { margin-right: 8px; }
+
+    .readings { display: flex; flex-direction: column; gap: 8px; }
+    .reading {
+      display: flex;
+      gap: 22px;
+      align-items: baseline;
+      font-family: var(--mono);
+      border: 1px solid var(--gray-dark);
+      border-radius: 6px;
+      padding: 8px 14px;
+      background: #0c0e10;
+    }
+    .reading.only { border-color: var(--green); }
+    .reading .bits { font-size: 17px; letter-spacing: 1px; flex: 1; word-break: break-all; }
+    .reading .bits .chunk { color: var(--white); }
+    .reading .bits .chunk.alt { color: var(--gray); }
+    .reading .word { font-size: 19px; color: var(--yellow); white-space: nowrap; }
+    .more { color: var(--gray-dark); font-size: 13px; font-family: var(--mono); }
+
+    /* Befund zu den Praefixen, nur wenn es mehrdeutig ist */
+    .why { margin: 18px 0 0; color: var(--gray); font-size: 14px; }
+    .why ul { margin: 6px 0 0; padding-left: 18px; }
+    .why li { margin: 3px 0; font-family: var(--mono); font-size: 14px; }
+    .why .bad { color: var(--red); }
+
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 22px; }
+    .controls .hint { width: 100%; }
+
+    .takeaway {
+      color: var(--yellow);
+      text-align: center;
+      margin: 26px 0 4px;
+      font-size: clamp(15px, 2.4vw, 19px);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the prefix trap</h1>
+    <p class="subtitle">you write the code words. the receiver only gets the bits &mdash; and reads them every way they fit.</p>
+
+    <div class="bench">
+      <div>
+        <div class="panel-head">your code words</div>
+        <div class="book" id="book"></div>
+      </div>
+      <div class="msg">
+        <div class="panel-head">the word you send</div>
+        <input id="word" type="text" spellcheck="false" autocomplete="off" aria-label="word to send, letters a to d">
+        <div class="sent" id="sent"></div>
+        <div class="sentnote" id="sentnote"></div>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+    <div class="readings" id="readings"></div>
+    <div class="more" id="more"></div>
+
+    <div class="why" id="why"></div>
+
+    <div class="controls">
+      <button class="ctrl" id="btn-reset">back to the start</button>
+      <span class="hint">try it: give a, b, c and d two bits each &middot; or make sure no code word starts another one</span>
+    </div>
+
+    <div class="takeaway">the receiver cannot see where a character ends. only your code words can tell it.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://winf-hsos.github.io/lifi-website/concepts/code-systems.html">code systems</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=3"></script>
+</body>
+</html>
