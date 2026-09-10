@@ -147,9 +147,9 @@ function render() {
   $("sent").textContent = bits || "—";
   const missingUsed = used.filter((ch) => !code[ch]);
   $("sentnote").textContent = missingUsed.length
-    ? "no code word for " + missingUsed.join(", ") + " — nothing is sent for it"
+    ? "no code word for " + missingUsed.join(", ") + ", so nothing is sent for it"
     : bits
-      ? bits.length + " bits on the wire, with no gaps"
+      ? bits.length + " bits, no gaps between them"
       : "type a word made of a, b, c and d";
 
   const conflicts = clashes(code);
@@ -170,14 +170,14 @@ function showVerdict(readings, bits) {
   const capped = n >= MAX_FOUND;
   if (n === 1) {
     el.className = "verdict unique";
-    el.innerHTML = '<span class="mark">&check;</span>one reading. the receiver cannot get it wrong.';
+    el.innerHTML = '<span class="mark">&check;</span>one reading. no guessing needed.';
   } else if (n === 0) {
     el.className = "verdict";
-    el.innerHTML = '<span class="mark">&times;</span>no reading at all. these bits are not a word in your code.';
+    el.innerHTML = '<span class="mark">&times;</span>no reading at all. these bits fit no word.';
   } else {
     el.className = "verdict";
     el.innerHTML = '<span class="mark">&times;</span>' + (capped ? "more than " + MAX_FOUND : n) +
-      " readings. the receiver has to pick one.";
+      " readings. which one is it?";
   }
 }
 
