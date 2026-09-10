@@ -23,7 +23,10 @@
 "use strict";
 
 // Embed-Modus fuer Folien: ?embed=1 blendet Kopf, Titel, Tastenhinweise, Fuss und Merksatz aus (assets/style.css)
-if (new URLSearchParams(location.search).has("embed")) document.body.classList.add("embed");
+const PARAMS = new URLSearchParams(location.search);
+if (PARAMS.has("embed")) document.body.classList.add("embed");
+// Die Regler bleiben im Embed-Modus sichtbar: Bei dieser Demo ist gerade das
+// Verstellen der Punkt, anders als etwa beim Pixel Filter.
 
 // --- Kanalmodell ------------------------------------------------------------
 const SCALE = 1024;              // Signalskala, Einheiten sind willkuerlich
@@ -406,6 +409,27 @@ window.addEventListener("keydown", (ev) => {
   }
   ev.preventDefault();
 });
+
+/* Startwerte aus der Adresse, damit eine Folie genau einen Fall zeigt:
+ * ?k=8&win=120&speed=35. Jeder Wert wird auf den Bereich seines Reglers
+ * begrenzt und auf dessen Schrittweite gerundet, damit Regler und Zustand
+ * nicht auseinanderlaufen. */
+function ausAdresse(name, id, setzen) {
+  const roh = PARAMS.get(name);
+  if (roh === null) return;
+  const zahl = Number(roh);
+  if (!Number.isFinite(zahl)) return;
+  const regler = el(id);
+  const min = Number(regler.min), max = Number(regler.max), schritt = Number(regler.step) || 1;
+  const wert = Math.min(max, Math.max(min, Math.round((zahl - min) / schritt) * schritt + min));
+  regler.value = String(wert);
+  setzen(wert);
+}
+
+ausAdresse("k", "in-k", (v) => { state.k = v; });
+ausAdresse("win", "in-win", (v) => { state.windowMs = v; });
+ausAdresse("speed", "in-speed", (v) => { state.speed = v / 100; });
+if (state.current >= state.k) state.current = state.k - 1;
 
 resize();
 newWindow(0);
