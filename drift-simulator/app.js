@@ -221,7 +221,7 @@ function drawFrame() {
     ctx.fillStyle = PALETTE.gray;
     ctx.font = "13px Arial";
     ctx.textAlign = "right";
-    ctx.fillText("paused — press space", streamW - 6, SB0 - 8);
+    ctx.fillText("paused, press space", streamW - 6, SB0 - 8);
   }
   ctx.textAlign = "left";
 }
