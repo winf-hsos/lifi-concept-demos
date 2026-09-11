@@ -99,6 +99,8 @@ Der Schichtenstapel als klickbares Diagnose-Spiel: Irgendwo steckt ein injiziert
 
 ### Bewusst ohne Demo
 
+> **Nachtrag 11.09.2026:** Für Protokolle gibt es den **Frame Builder** inzwischen doch, gebaut beim Umstellen von Deck 11 und auf Zuruf des Nutzers veröffentlicht. Der Einwand unten bleibt trotzdem stehen und ist noch nicht entkräftet: Die Demo zeigt Präambel, Längenfeld und Endmarke als fertige Bausteine, und genau die sollen die Teams in Challenge 3 selbst finden. Sie ist deshalb **nicht** auf einer Folie eingebettet und **nicht** von der Konzeptseite verlinkt, sondern nur über diese Übersicht erreichbar. Zu entscheiden bleibt, ob sie dort bleibt, später (nach der Normungssitzung) sichtbarer wird oder wieder verschwindet.
+
 **Problemzerlegung, IPO, Algorithmen und Programme, Protokolle, Information und Träger, Verarbeitung:** Entweder trägt das echte Gerät samt Werkstatt die Erfahrung besser (Zerlegung, Algorithmen, Protokolle: der Rahmen entsteht in der Normungssitzung und gehört nicht vorgebaut), oder das Konzept ist so unmittelbar, dass eine Demo nur dekorieren würde. Das Fragenspiel deckt die informationstheoretische Seite der Problemzerlegung (Halbieren) gleich mit ab.
 
 ## Vorschlag für die Reihenfolge

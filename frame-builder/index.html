@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>frame builder</title>
+  <meta name="description" content="build the frame around a message: pick a preamble and a way to mark the end, then watch a receiver try to find your message in a noisy room.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project &middot; concept demos">
+  <meta property="og:title" content="frame builder">
+  <meta property="og:description" content="build the frame around a message: pick a preamble and a way to mark the end, then watch a receiver try to find your message in a noisy room.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/frame-builder/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/frame-builder/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .lab-canvas {
+      width: 100%;
+      height: 150px;
+      display: block;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      margin: 16px 0 6px;
+    }
+    .sim-note { color: var(--gray-dark); font-size: 12px; text-align: right; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px 24px;
+      margin: 18px 0 8px;
+    }
+    .stat .label { color: var(--gray); font-size: 13px; }
+    .stat .value { font-family: var(--mono); font-size: clamp(22px, 4vw, 32px); }
+    .stat .value.bad { color: var(--red); }
+    .stat .value.good { color: var(--green); }
+    .stat .note { color: var(--gray-dark); font-size: 12px; }
+
+    /* Die drei Zustaende des Empfaengers, einer davon leuchtet */
+    .states { display: flex; gap: 10px; margin: 16px 0 4px; }
+    .state {
+      flex: 1;
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--gray-dark);
+      text-align: center;
+    }
+    .state.on { color: var(--bg); background: var(--yellow); border-color: var(--yellow); }
+    .state.bad.on { color: var(--bg); background: var(--red); border-color: var(--red); }
+
+    .lines { margin: 14px 0 2px; }
+    .line { font-family: var(--mono); font-size: 15px; color: var(--gray-light); white-space: pre; }
+    .line-label { display: inline-block; width: 90px; color: var(--gray-dark); }
+    .line.good .payload { color: var(--green); }
+    .line.bad .payload { color: var(--red); }
+
+    /* Die Wahlmoeglichkeiten als echte Schalterreihen */
+    .choices { display: flex; flex-wrap: wrap; gap: 22px; margin: 20px 0 6px; }
+    .choice { min-width: 200px; }
+    .choice > .label { color: var(--gray-dark); font-size: 13px; margin-bottom: 6px; }
+    .choice .row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .opt {
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--gray-dark);
+      background: transparent;
+      color: var(--gray-light);
+      cursor: pointer;
+    }
+    .opt:hover { border-color: var(--gray-light); }
+    .opt[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: var(--bg); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>frame builder</h1>
+    <p class="subtitle">a receiver is already listening to a lit room. build the frame around your message and see what it makes of it.</p>
+
+    <canvas class="lab-canvas" id="lab" aria-hidden="true"></canvas>
+    <div class="sim-note">the room is never dark, and its light is warm: now and then it looks like red, almost never like blue.</div>
+
+    <div class="states">
+      <div class="state" id="st-waiting">waiting</div>
+      <div class="state" id="st-reading">reading</div>
+      <div class="state bad" id="st-stuck">stuck</div>
+    </div>
+
+    <div class="lines">
+      <div class="line"><span class="line-label">sent:</span><span class="payload" id="ln-sent"></span></div>
+      <div class="line" id="ln-got-row"><span class="line-label">received:</span><span class="payload" id="ln-got"></span></div>
+    </div>
+
+    <div class="choices">
+      <div class="choice">
+        <div class="label">preamble</div>
+        <div class="row" id="ch-pre">
+          <button class="opt" data-value="none">none</button>
+          <button class="opt" data-value="single">one red</button>
+          <button class="opt" data-value="alt3">red-blue &times;3</button>
+        </div>
+      </div>
+      <div class="choice">
+        <div class="label">how the end is marked</div>
+        <div class="row" id="ch-end">
+          <button class="opt" data-value="none">nothing</button>
+          <button class="opt" data-value="marker">end marker</button>
+          <button class="opt" data-value="length">length field</button>
+        </div>
+      </div>
+      <div class="choice">
+        <div class="label">message</div>
+        <div class="row" id="ch-msg">
+          <button class="opt" data-value="HI">HI</button>
+          <button class="opt" data-value="SONNE">SONNE</button>
+          <button class="opt" data-value="GUTEN MORGEN">GUTEN MORGEN</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="label">false starts</div>
+        <div class="value" id="st-false">&ndash;</div>
+        <div class="note">the room looked like the preamble</div>
+      </div>
+      <div class="stat">
+        <div class="label">messages read</div>
+        <div class="value" id="st-read">&ndash;</div>
+        <div class="note">two were sent</div>
+      </div>
+      <div class="stat">
+        <div class="label">frame overhead</div>
+        <div class="value" id="st-over">&ndash;</div>
+        <div class="note" id="st-over-note">symbols without payload</div>
+      </div>
+    </div>
+
+    <div class="controls" style="margin-top: 20px;">
+      <button class="ctrl" id="btn-run">run</button>
+      <button class="ctrl" id="btn-step">one symbol</button>
+      <button class="ctrl" id="btn-reset">reset</button>
+      <span class="hint">keys: space run &middot; n one symbol &middot; r reset</span>
+    </div>
+
+    <div class="takeaway">a preamble buys you the start, an end rule buys you the way back. both cost symbols that carry nothing.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://docs.lifi-project.de/concepts/protocols.html">protokolle</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=1"></script>
+</body>
+</html>
