@@ -15,6 +15,11 @@
  * die eigene Lichtstrecke braeuchte (30 bit/s als mittlere Challenge-
  * Groessenordnung). Das verankert Dateigroessen im Projekt.
  *
+ * Wer ein Pixel des digitalen Bildes ueberfaehrt, sieht seinen Wert im
+ * gewaehlten System: die Bits, nach Kanaelen gruppiert, und daneben die
+ * Zahlen. Die Zelle wird auf beiden Bildern umrandet, damit man sieht,
+ * welcher Fleck des Originals zu diesem einen Wert geworden ist.
+ *
  * Kein Framework, kein Build. */
 
 "use strict";
@@ -113,6 +118,8 @@ const level = (v, bits) => {
   return Math.round(Math.round(v / 255 * steps) / steps * 255);
 };
 
+let digital = null;   // die quantisierten Pixel des aktuellen Bildes (ImageData)
+
 function digitise() {
   const res = RESOLUTIONS[state.resIdx];
   const depth = DEPTHS[state.depthIdx];
@@ -151,11 +158,71 @@ function digitise() {
     }
   }
   sctx.putImageData(img, 0, 0);
+  digital = img;
   // Anzeige: pixelig hochskaliert
   const out = el("cv-dig");
   out.width = res;
   out.height = res;
   out.getContext("2d").drawImage(small, 0, 0);
+}
+
+// --- Der Wert eines Pixels ---------------------------------------------------
+/* Ein Pixel steht im Speicher als Bits, und wie viele und welche, sagt das
+ * gewaehlte System. Die Funktion liefert die Kanaele als [name, wert, bits],
+ * aus denen der Anzeigetext gebaut wird; dieselbe Rundung wie in digitise(). */
+const bin = (v, bits) => v.toString(2).padStart(bits, "0");
+const stufe = (v, bits) => Math.round(v / 255 * ((1 << bits) - 1));
+
+function pixelWert(r, g, b) {
+  const depth = DEPTHS[state.depthIdx];
+  const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+  switch (depth.key) {
+    case "bw":    return [["", r === 255 ? 1 : 0, 1]];
+    case "grey2": return [["grey", Math.round(lum / 255 * 3), 2]];
+    case "c4":    return [["colour no.", EGA.findIndex((f) => f[0] === r && f[1] === g && f[2] === b), 4]];
+    case "grey":  return [["grey", lum, 8]];
+    case "c8":    return [["r", stufe(r, 3), 3], ["g", stufe(g, 3), 3], ["b", stufe(b, 2), 2]];
+    case "c16":   return [["r", stufe(r, 5), 5], ["g", stufe(g, 6), 6], ["b", stufe(b, 5), 5]];
+    default:      return [["r", r, 8], ["g", g, 8], ["b", b, 8]];
+  }
+}
+
+function zeigePixel(x, y) {
+  const res = RESOLUTIONS[state.resIdx];
+  const out = el("rd-pixel");
+  const zellen = [el("cell-orig"), el("cell-dig")];
+  if (x === null || !digital) {
+    out.innerHTML = `<span class="dim">hover a pixel to see its ${DEPTHS[state.depthIdx].bits} bits</span>`;
+    zellen.forEach((z) => z.classList.remove("on"));
+    return;
+  }
+  const i = (y * res + x) * 4;
+  const d = digital.data;
+  const kanaele = pixelWert(d[i], d[i + 1], d[i + 2]);
+  const bits = kanaele.map(([, v, n]) => bin(v, n)).join(" ");
+  const zahlen = kanaele.map(([name, v]) => (name ? `${name} ${v}` : `${v}`)).join(", ");
+  out.innerHTML = `<span class="dim">pixel (${x}, ${y}):</span> <span class="bits">${bits}</span><br>` +
+                  `<span class="dim">= ${zahlen}</span>`;
+  // Rahmen ueber der Zelle, auf beiden Bildern; die Groesse kommt aus der
+  // dargestellten Breite des Canvas, nicht aus seinen Pixeln
+  zellen.forEach((z) => {
+    const cv = z.previousElementSibling;
+    const groesse = cv.getBoundingClientRect().width / res;
+    z.style.width = z.style.height = `${groesse}px`;
+    z.style.left = `${x * groesse}px`;
+    z.style.top = `${y * groesse}px`;
+    z.classList.add("on");
+  });
+}
+
+function pixelUnter(ev, id) {
+  const cv = el(id);
+  const rect = cv.getBoundingClientRect();
+  const res = RESOLUTIONS[state.resIdx];
+  const x = Math.floor((ev.clientX - rect.left) / rect.width * res);
+  const y = Math.floor((ev.clientY - rect.top) / rect.height * res);
+  if (x < 0 || y < 0 || x >= res || y >= res) return null;
+  return [x, y];
 }
 
 // --- Rechnung ---------------------------------------------------------------
@@ -188,6 +255,7 @@ function render() {
   drawOriginal();
   digitise();
   updateCalc();
+  zeigePixel(null);
 }
 
 // --- Bedienung --------------------------------------------------------------
@@ -227,6 +295,14 @@ document.addEventListener("keydown", (ev) => {
     render();
   }
 });
+
+for (const id of ["cv-dig", "cv-orig"]) {
+  el(id).addEventListener("pointermove", (ev) => {
+    const p = pixelUnter(ev, id);
+    p ? zeigePixel(p[0], p[1]) : zeigePixel(null);
+  });
+  el(id).addEventListener("pointerleave", () => zeigePixel(null));
+}
 
 el("motifs").addEventListener("click", (ev) => {
   const b = ev.target.closest("button");

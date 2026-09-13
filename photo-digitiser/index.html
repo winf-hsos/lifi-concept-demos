@@ -52,6 +52,32 @@
       display: block;
     }
     .side canvas.pix { image-rendering: pixelated; }
+    /* Das ueberfahrene Pixel: ein gelber Rahmen ueber beiden Bildern, als
+       Overlay statt in den Canvas gezeichnet, damit die Bilder unberuehrt
+       bleiben. .frame haelt die Bildflaeche, damit das Overlay sich an ihr
+       ausrichten kann. */
+    .side .frame { position: relative; display: inline-block; line-height: 0; }
+    .side .cell {
+      position: absolute; left: 0; top: 0;
+      border: 2px solid var(--yellow);
+      box-sizing: border-box;
+      pointer-events: none;
+      display: none;
+    }
+    .side .cell.on { display: block; }
+    /* Der Wert des ueberfahrenen Pixels: feste Hoehe, damit beim Ein- und
+       Ausblenden nichts springt. */
+    .pixel {
+      font-family: var(--mono);
+      color: var(--gray-light);
+      font-size: 14px;
+      text-align: center;
+      min-height: 3.2em;
+      margin: 8px 0 0;
+      line-height: 1.6;
+    }
+    .pixel .bits { color: var(--yellow); }
+    .pixel .dim { color: var(--gray); }
 
     .calc {
       font-family: var(--mono);
@@ -106,11 +132,12 @@
     <div class="pair">
       <div class="side">
         <div class="clabel">the analog picture (endless detail)</div>
-        <canvas id="cv-orig" width="256" height="256"></canvas>
+        <div class="frame"><canvas id="cv-orig" width="256" height="256"></canvas><div class="cell" id="cell-orig"></div></div>
       </div>
       <div class="side">
         <div class="clabel" id="lbl-dig">your digital picture</div>
-        <canvas id="cv-dig" class="pix" width="256" height="256"></canvas>
+        <div class="frame"><canvas id="cv-dig" class="pix" width="256" height="256"></canvas><div class="cell" id="cell-dig"></div></div>
+        <div class="pixel" id="rd-pixel"></div>
       </div>
     </div>
 
@@ -143,6 +170,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
