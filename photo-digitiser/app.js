@@ -201,7 +201,7 @@ function zeigePixel(x, y) {
   const kanaele = pixelWert(d[i], d[i + 1], d[i + 2]);
   const bits = kanaele.map(([, v, n]) => bin(v, n)).join(" ");
   const zahlen = kanaele.map(([name, v]) => (name ? `${name} ${v}` : `${v}`)).join(", ");
-  out.innerHTML = `<span class="dim">pixel (${x}, ${y}):</span> <span class="bits">${bits}</span><br>` +
+  out.innerHTML = `<span class="dim">pixel (${x}, ${y})</span><br><span class="bits">${bits}</span><br>` +
                   `<span class="dim">= ${zahlen}</span>`;
   // Rahmen ueber der Zelle, auf beiden Bildern; die Groesse kommt aus der
   // dargestellten Breite des Canvas, nicht aus seinen Pixeln

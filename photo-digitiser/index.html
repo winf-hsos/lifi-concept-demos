@@ -65,16 +65,20 @@
       display: none;
     }
     .side .cell.on { display: block; }
-    /* Der Wert des ueberfahrenen Pixels: feste Hoehe, damit beim Ein- und
-       Ausblenden nichts springt. */
+    /* Der Wert des ueberfahrenen Pixels: genau so breit wie das Bild und
+       immer drei Zeilen hoch (Koordinate, Bits, Zahlen). Sonst wuerde eine
+       laengere Zeile die rechte Spalte verbreitern, und die zentrierte
+       Reihe rueckte samt linkem Bild nach. */
     .pixel {
       font-family: var(--mono);
       color: var(--gray-light);
       font-size: 14px;
       text-align: center;
-      min-height: 3.2em;
-      margin: 8px 0 0;
+      width: min(300px, 84vw);
+      height: 4.8em;
+      margin: 8px auto 0;
       line-height: 1.6;
+      overflow: hidden;
     }
     .pixel .bits { color: var(--yellow); }
     .pixel .dim { color: var(--gray); }
@@ -170,6 +174,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
