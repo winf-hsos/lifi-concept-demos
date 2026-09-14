@@ -100,6 +100,7 @@
       <div class="panel">
         <div class="plabel">trick one: point back (what the packer writes)</div>
         <div class="tokens" id="tokens"></div>
+        <div class="hint" style="margin-top: 8px">a pointer copies one character at a time, each from the given distance back, and never reaches for a character that is not written yet. so it may reach into its own output: (5 back, 9 long) after &quot;afde &quot; writes &quot;afde afde&quot;, and (1 back, 258 long) after one &quot;a&quot; writes 258 more. that is how one letter, 400 times, gets packed.</div>
       </div>
       <div class="panel">
         <div class="plabel">trick two: count first (the codes for the letters that remain)</div>
@@ -116,6 +117,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
