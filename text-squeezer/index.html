@@ -91,7 +91,7 @@
       <button class="ctrl" data-p="random">random letters</button>
       <button class="ctrl" data-p="bits">a bit pattern</button>
     </div>
-    <div class="hint">keys 1 to 6 pick an example. the bars compare against the smallest fixed code for this text's own alphabet: with 32 different characters, 5 bit each. a pointer is written only where it saves more than it costs.</div>
+    <div class="hint">keys 1 to 6 pick an example. the bars compare against the smallest fixed code for this text's own alphabet: with 32 different characters, 5 bit each. every repeat of three characters or more becomes a pointer, even where the pointer costs more than it saves; a real packer would leave those characters alone.</div>
 
     <div class="bars" id="bars"></div>
     <div class="verdict" id="verdict"></div>
@@ -117,6 +117,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

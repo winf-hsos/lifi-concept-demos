@@ -6,8 +6,8 @@
  *   Trick eins, zurueckzeigen (Lempel-Ziv): Wiederholtes wird durch einen
  *   Verweis ersetzt, "so viele Zeichen zurueck, so lang". Das Format ist das
  *   der Folie: eine Marke (ein Symbol mehr im Alphabet), 12 Bit Abstand,
- *   8 Bit Laenge. Geschrieben wird ein Verweis nur, wo er weniger kostet als
- *   die Zeichen, die er ersetzt.
+ *   8 Bit Laenge. Geschrieben wird ein Verweis fuer jede Wiederholung ab drei
+ *   Zeichen, auch wo er mehr kostet, als er spart; so sieht man den Preis.
  *
  *   Trick zwei, erst zaehlen (Huffman): die Zeichen, die stehen bleiben, und
  *   die Marke bekommen Codes nach Haeufigkeit, das Haeufige kurz. Die Tabelle
@@ -70,8 +70,10 @@ const PRESETS = {
 // --- Trick eins: zurueckzeigen -----------------------------------------------
 /* Das Format ist das der Folie: Ein Verweis ist eine Marke (ein Symbol mehr im
  * Alphabet, kostet so viel wie ein Zeichen), dann 12 Bit Abstand und 8 Bit
- * Laenge. Ein Verweis wird nur geschrieben, wenn er kuerzer ist als das, was
- * er ersetzt; sonst liesse der Packer die Zeichen stehen. */
+ * Laenge. Geschrieben wird ein Verweis fuer jede Wiederholung ab drei Zeichen,
+ * auch wenn er mehr kostet, als er spart: Die Demo soll den Trick zeigen und
+ * seinen Preis, so wie Trick zwei auch immer angewandt wird. Ein echter Packer
+ * liesse solche Zeichen stehen (Frage cp-014). */
 const FENSTER = 4096, MIN_LAENGE = 3, MAX_LAENGE = 258;
 const BIT_ABSTAND = 12, BIT_LAENGE = 8;
 
@@ -81,8 +83,7 @@ const BIT_ABSTAND = 12, BIT_LAENGE = 8;
  * Verweisen ({zurueck, laenge}). `fest` sind die Bits je Zeichen im festen
  * Code; daraus folgt, ab welcher Laenge ein Verweis sich lohnt. */
 function zurueckzeigen(text, fest) {
-  const bitVerweis = fest + BIT_ABSTAND + BIT_LAENGE;
-  const lohntAb = Math.max(MIN_LAENGE, Math.floor(bitVerweis / fest) + 1);
+  const lohntAb = MIN_LAENGE;
   const tokens = [];
   const stellen = new Map();
   let i = 0;
@@ -102,7 +103,6 @@ function zurueckzeigen(text, fest) {
         }
       }
     }
-    // ein Verweis muss sich lohnen: mehr sparen, als er kostet
     const schritt = besteLaenge >= lohntAb ? besteLaenge : 1;
     if (besteLaenge >= lohntAb) tokens.push({ zurueck: besterAbstand, laenge: besteLaenge });
     else tokens.push(text[i]);
@@ -180,12 +180,15 @@ function balken(r, text) {
     ["after trick one", `${r.literale.length} characters stay, ${r.verweise} pointers of ${r.fest + BIT_ABSTAND + BIT_LAENGE} bit`, r.bitEins, "one"],
     ["after both tricks", `plus a code table of ${fmt(r.bitTabelle)} bits`, r.bitBeide, "two"],
   ];
+  // Alle Balken auf denselben Massstab: der laengste fuellt die Spur, damit ein
+  // gewachsener Stand auch laenger aussieht als das Original
+  const laengster = Math.max(...zeilen.map((z) => z[2]), 1);
   el("bars").innerHTML = zeilen.map(([name, sub, bits, art]) => {
     const anteil = r.bitFest ? bits / r.bitFest : 0;
     const grow = art !== "fest" && anteil > 1;
     const pct = r.bitFest ? `${Math.round(anteil * 100)} %` : "";
     return `<div class="blabel">${name}<small>${sub}</small></div>` +
-           `<div class="track"><div class="fill ${grow ? "grow" : art}" style="width:${Math.min(100, anteil * 100)}%"></div></div>` +
+           `<div class="track"><div class="fill ${grow ? "grow" : art}" style="width:${(bits / laengster) * 100}%"></div></div>` +
            `<div class="bval">${fmt(bits)} bit${art === "fest" ? "" : ` <span class="pct${grow ? " grow" : ""}">${pct}</span>`}</div>`;
   }).join("");
 }
