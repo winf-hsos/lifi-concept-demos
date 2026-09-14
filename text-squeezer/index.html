@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the text squeezer</title>
+  <meta name="description" content="paste any text and watch it get packed as you type: point back to repeats, give the frequent letters short codes, and see what is left. one letter over and over squeezes to almost nothing; random letters do not squeeze at all.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the text squeezer">
+  <meta property="og:description" content="paste any text and watch it get packed as you type: point back to repeats, give the frequent letters short codes, and see what is left. one letter over and over squeezes to almost nothing; random letters do not squeeze at all.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/text-squeezer/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/text-squeezer/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      box-sizing: border-box;
+      background: #0c0e10;
+      color: var(--white);
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+    textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 4px; }
+    .presets .plabel { color: var(--gray); font-size: 13px; margin-right: 4px; }
+
+    /* Drei Balken: fester Code, nach Trick eins, nach beiden. Alle auf dieselbe
+       Breite bezogen (den festen Code), damit Wachsen sichtbar ueber 100 % geht. */
+    .bars { margin: 22px 0 6px; display: grid; grid-template-columns: minmax(130px, 1fr) minmax(60px, 2fr) auto; gap: 12px 16px; align-items: center; }
+    .bars .blabel { color: var(--gray-light); font-size: 14px; overflow-wrap: anywhere; }
+    .bars .blabel small { display: block; color: var(--gray); font-size: 12px; }
+    .bars .track { position: relative; height: 26px; background: #14171a; border-radius: 5px; overflow: hidden; }
+    .bars .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--gray-light); border-radius: 5px; transition: width 0.15s; }
+    .bars .fill.one { background: var(--yellow); }
+    .bars .fill.two { background: var(--green); }
+    .bars .fill.grow { background: var(--red); }
+    .bars .bval { font-family: var(--mono); font-size: 14px; color: var(--white); white-space: nowrap; text-align: right; }
+    .bars .bval .pct { color: var(--yellow); }
+    .bars .bval .pct.grow { color: var(--red); }
+
+    .verdict { text-align: center; color: var(--yellow); font-size: clamp(15px, 2.2vw, 18px); margin: 16px 0 6px; min-height: 1.6em; }
+
+    .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px 32px; border-top: 1px solid var(--gray-dark); padding-top: 18px; margin-top: 16px; }
+    .panel .plabel { color: var(--gray); font-size: 13px; margin-bottom: 8px; }
+    .tokens {
+      font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--gray-light);
+      max-height: 210px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+      background: #0c0e10; border: 1px solid var(--gray-dark); border-radius: 8px; padding: 10px 12px;
+    }
+    .tokens .ptr { color: var(--yellow); border: 1px solid var(--yellow); border-radius: 4px; padding: 0 4px; margin: 0 2px; white-space: nowrap; }
+    table.codes { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+    table.codes th { color: var(--gray); font-weight: normal; text-align: left; padding: 2px 16px 6px 0; font-size: 12px; font-family: var(--text); }
+    table.codes td { padding: 2px 16px 2px 0; color: var(--gray-light); }
+    table.codes td.sym { color: var(--white); }
+    table.codes td.code { color: var(--yellow); }
+    table.codes tr.more td { color: var(--gray); font-family: var(--text); font-size: 12px; }
+
+    .takeaway { color: var(--yellow); text-align: center; margin: 24px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the text squeezer</h1>
+    <p class="subtitle">paste any text. it gets packed as you type: repeats become pointers, frequent letters get short codes &mdash; and you see what is left.</p>
+
+    <textarea id="in-text" spellcheck="false" aria-label="text to squeeze"></textarea>
+
+    <div class="presets" id="presets" role="group" aria-label="example texts">
+      <span class="plabel">try:</span>
+      <button class="ctrl" data-p="sentence">a sentence</button>
+      <button class="ctrl" data-p="same">one letter, 400 times</button>
+      <button class="ctrl" data-p="english">a paragraph</button>
+      <button class="ctrl" data-p="log">a log file</button>
+      <button class="ctrl" data-p="random">random letters</button>
+      <button class="ctrl" data-p="bits">a bit pattern</button>
+    </div>
+    <div class="hint">keys 1 to 6 pick an example. the bars compare against the smallest fixed code for this text's own alphabet: with 32 different characters, 5 bit each. a pointer is written only where it saves more than it costs.</div>
+
+    <div class="bars" id="bars"></div>
+    <div class="verdict" id="verdict"></div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="plabel">trick one: point back (what the packer writes)</div>
+        <div class="tokens" id="tokens"></div>
+      </div>
+      <div class="panel">
+        <div class="plabel">trick two: count first (the codes for the letters that remain)</div>
+        <table class="codes" id="codes"></table>
+      </div>
+    </div>
+
+    <div class="takeaway">what repeats or comes often can be said shorter. what is new every time cannot, and the bookkeeping makes it grow.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://docs.lifi-project.de/concepts/compression.html">compression</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=2"></script>
+</body>
+</html>
