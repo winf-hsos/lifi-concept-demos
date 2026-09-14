@@ -83,7 +83,7 @@ function textwert(bytes) {
 }
 
 function textRechnen() {
-  if (brute) { cancelAnimationFrame(brute); brute = null; }
+  if (brute) { clearTimeout(brute); brute = null; }
   const text = el("in-text").value;
   const keyText = el("in-key").value;
   const bytes = enc.encode(text);
@@ -103,8 +103,7 @@ function textRechnen() {
   else if (key.length === 1) { v.textContent = `one-byte key ${hex(key[0])}: ${bytes.length} bytes scrambled. only 256 keys like this exist. press the second button.`; }
   else if (key.length >= bytes.length) { v.className = "verdict ok"; v.textContent = `the key is as long as the message and repeats nowhere. used once, this is the one-time pad: nothing to guess, nothing to see.`; }
   else { v.textContent = `${bytes.length} bytes scrambled with a ${key.length}-byte key, repeated ${Math.ceil(bytes.length / key.length)} times. same length as before, not one byte readable.`; }
-  el("btn-brute").disabled = key.length !== 1 || key[0] === 0 || !bytes.length;
-  el("brute-hint").hidden = key.length === 1 && key[0] !== 0;
+  el("btn-brute").disabled = !bytes.length;
   return { bytes, key, sent };
 }
 
@@ -118,10 +117,33 @@ el("btn-decrypt").addEventListener("click", () => {
   v.textContent = "the same key, the same xor: the bits the key flipped, it flips back. nothing else was ever touched.";
 });
 
+/* Wie viele Schluessel es bei n Byte gibt und wie lange das Durchprobieren
+ * dauert, bei einer Milliarde Versuchen je Sekunde (eine Grafikkarte). */
+function schluesselraum(n) {
+  const anzahl = 256n ** BigInt(n);
+  const sek = Number(anzahl) / 1e9;
+  let zeit;
+  if (sek < 1) zeit = "under a second";
+  else if (sek < 60) zeit = `${Math.round(sek)} seconds`;
+  else if (sek < 3600) zeit = `${Math.round(sek / 60)} minutes`;
+  else if (sek < 86400) zeit = `${Math.round(sek / 3600)} hours`;
+  else if (sek < 31557600) zeit = `${Math.round(sek / 86400)} days`;
+  else if (sek < 31557600 * 1e6) zeit = `${Math.round(sek / 31557600).toLocaleString("en-US")} years`;
+  else zeit = `${(sek / 31557600).toExponential(0).replace("e+", " · 10^")} years`;
+  return { anzahl: anzahl.toLocaleString("en-US"), zeit };
+}
+
 el("btn-brute").addEventListener("click", () => {
-  const { sent } = textRechnen();
+  const { key, sent } = textRechnen();
   const box = el("tries");
   box.hidden = false;
+  if (key.length !== 1 || key[0] === 0) {
+    const r = schluesselraum(key.length);
+    box.innerHTML = key[0] === 0 && key.length === 1
+      ? "a key of zeros is no key: the message is already readable."
+      : `your key has ${key.length} bytes, so there are 256<sup>${key.length}</sup> = <span class="k">${r.anzahl}</span> possible keys.\ntrying them all at a billion a second takes <span class="k">${r.zeit}</span>.\nwith a one-byte key this button tries all 256 in front of you: press example 2.`;
+    return;
+  }
   let k = 0, best = { score: -1, k: 0, text: "" };
   const schritt = () => {
     for (let n = 0; n < 6 && k < 256; n++, k++) {
@@ -131,14 +153,14 @@ el("btn-brute").addEventListener("click", () => {
       if (s > best.score) best = { score: s, k, text: t };
       box.innerHTML = `try ${String(k + 1).padStart(3)} of 256   key <span class="k">${hex(k)}</span>   ${t.slice(0, 80)}`;
     }
-    if (k < 256) { brute = requestAnimationFrame(schritt); return; }
+    if (k < 256) { brute = setTimeout(schritt, 16); return; }
     brute = null;
     box.innerHTML = `256 tries.   key <span class="k">${hex(best.k)}</span> reads as text:\n<span class="found">${best.text}</span>`;
     const v = el("verdict");
     v.className = "verdict";
     v.textContent = `found in a blink. looking like noise is not the same as being noise: one byte of key has 256 values, and a program tries them all.`;
   };
-  brute = requestAnimationFrame(schritt);
+  brute = setTimeout(schritt, 16);
 });
 
 el("in-text").addEventListener("input", textRechnen);
@@ -194,7 +216,7 @@ function aktuellerSchluessel() {
 
 function bildZeichnen() {
   if (!roh) return;
-  if (bruteBild) { cancelAnimationFrame(bruteBild); bruteBild = null; }
+  if (bruteBild) { clearTimeout(bruteBild); bruteBild = null; }
   document.querySelectorAll("#mode-picture [data-k]").forEach((b) => b.classList.toggle("is-active", b.dataset.k === kart));
   const key = aktuellerSchluessel();
   const sent = xor(roh, key);
@@ -208,9 +230,7 @@ function bildZeichnen() {
   else if (kart === "3") v.textContent = "three bytes, in step with the three colour values: equal bytes give equal bytes. the colours are wrong, the parrot is not.";
   else if (kart === "4") v.textContent = "four bytes run against the three-byte beat of the pixels: stripes, and the parrot still shows through.";
   else { v.className = "verdict ok"; v.textContent = "a random key as long as the picture, used once: noise, provably. and the key is as big as the picture and has to travel too."; }
-  el("btn-brute-pic").disabled = kart !== "1";
   el("btn-newkey").hidden = kart !== "otp";
-  el("brute-pic-hint").hidden = kart === "1";
 }
 
 /* Glattheit: mittlerer Abstand zu rechtem Nachbarn, je Farbwert. Klein bei einem
@@ -224,29 +244,49 @@ function rauheit(bytes) {
   return s / n;
 }
 
+/* Das Negativ eines Bilds (Schluessel xor ff) ist genauso glatt wie das Bild.
+ * Zwischen den beiden entscheidet der Anteil fast weisser Werte: Ein Foto hat
+ * selten grosse reinweisse Flaechen, sein Negativ macht aus Schwarz Weiss. */
+function weissanteil(bytes) {
+  let w = 0, n = 0;
+  for (let y = 0; y < 256; y += 4) {
+    const z = y * 768;
+    for (let i = z; i < z + 768; i++) { if (bytes[i] >= 250) w++; n++; }
+  }
+  return w / n;
+}
+
 el("btn-brute-pic").addEventListener("click", () => {
   if (!roh) return;
+  if (kart !== "1") {
+    const v = el("verdict-pic");
+    v.className = "verdict";
+    if (kart === "otp") v.textContent = "no trying here: the key has 196,608 bytes and every one of them is independent. every possible picture fits equally well.";
+    else { const r = schluesselraum(kart === "3" ? 3 : 4); v.textContent = `${kart} bytes of key: ${r.anzahl} possibilities, ${r.zeit} at a billion tries a second. a program would find it. and you do not even need to: look at the picture.`; }
+    return;
+  }
   const sent = xor(roh, new Uint8Array(FIX[1]));
-  let k = 0, best = { r: Infinity, k: 0 };
+  let k = 0, best = { r: Infinity, w: 1, k: 0 };
   const t0 = performance.now();
   const v = el("verdict-pic");
   const schritt = () => {
     for (let n = 0; n < 4 && k < 256; n++, k++) {
       const back = xor(sent, [k]);
-      const r = rauheit(back);
-      if (r < best.r) best = { r, k };
+      const r = rauheit(back), w = weissanteil(back);
+      // glatter gewinnt; bei Gleichstand (Bild gegen sein Negativ) das mit weniger Weiss
+      if (r < best.r || (r === best.r && w < best.w)) best = { r, w, k };
       if (n === 3 || k === 255) bytesAufCanvas(back, el("cv-sent"));
     }
     v.className = "verdict";
     v.textContent = `try ${k} of 256, key ${hex(k - 1)} …`;
-    if (k < 256) { bruteBild = requestAnimationFrame(schritt); return; }
+    if (k < 256) { bruteBild = setTimeout(schritt, 16); return; }
     bruteBild = null;
     bytesAufCanvas(xor(sent, [best.k]), el("cv-sent"));
     const ms = Math.round(performance.now() - t0);
     v.className = "verdict ok";
-    v.textContent = `key ${hex(best.k)} gives the smoothest picture of all 256. found in ${(ms / 1000).toFixed(1)} s, most of it spent drawing.`;
+    v.textContent = `key ${hex(best.k)} gives the smoothest picture of all 256 (its negative, key ${hex(best.k ^ 0xff)}, is just as smooth; the darker one wins). found in ${(ms / 1000).toFixed(1)} s, most of it spent drawing.`;
   };
-  bruteBild = requestAnimationFrame(schritt);
+  bruteBild = setTimeout(schritt, 16);
 });
 el("btn-newkey").addEventListener("click", () => { zufallsSchluessel(); bildZeichnen(); });
 document.querySelectorAll("#mode-picture [data-k]").forEach((b) => b.addEventListener("click", () => { kart = b.dataset.k; bildZeichnen(); }));

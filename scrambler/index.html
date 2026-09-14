@@ -131,8 +131,8 @@
 
       <div class="actions">
         <button class="ctrl" id="btn-decrypt">decrypt with the same key</button>
-        <button class="ctrl" id="btn-brute">try all 256 keys</button>
-        <span class="hint" id="brute-hint">the second button needs a key of one character.</span>
+        <button class="ctrl" id="btn-brute">try all keys</button>
+        <span class="hint">the second button plays the neighbours: it decrypts the sent bytes with every possible key and keeps the one that reads as text. with a one-byte key that is 256 tries, shown one by one; with a longer key it tells you how many tries that would be.</span>
       </div>
       <div class="verdict" id="verdict"></div>
       <div class="tries" id="tries" hidden></div>
@@ -154,9 +154,9 @@
         <figure><canvas id="cv-sent" width="256" height="256"></canvas><figcaption id="cap-sent">what goes over the link<span class="sub">what the neighbouring team sees</span></figcaption></figure>
       </div>
       <div class="actions">
-        <button class="ctrl" id="btn-brute-pic">try all 256 keys</button>
+        <button class="ctrl" id="btn-brute-pic">try all keys</button>
         <button class="ctrl" id="btn-newkey">new random key</button>
-        <span class="hint" id="brute-pic-hint">the first button needs the one-byte key. it keeps the smoothest of the 256 results: a picture has neighbours that resemble each other, noise has not.</span>
+        <span class="hint">the first button plays the neighbours: with a one-byte key it decrypts with all 256 and keeps the smoothest picture, because a picture has neighbours that resemble each other and noise has not. with a longer key it tells you how many tries that would be.</span>
       </div>
       <div class="verdict" id="verdict-pic"></div>
     </section>
@@ -170,6 +170,6 @@
   </div>
 
   <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
