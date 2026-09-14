@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>the scrambler</title>
+  <meta name="description" content="type a text and a key and watch every byte get scrambled with xor: the key flips the bits, the same key flips them back. then give it a one-byte key and try all 256, or scramble the parrot with a short key and see what survives.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LiFi Project · concept demos">
+  <meta property="og:title" content="the scrambler">
+  <meta property="og:description" content="type a text and a key and watch every byte get scrambled with xor: the key flips the bits, the same key flips them back. then give it a one-byte key and try all 256, or scramble the parrot with a short key and see what survives.">
+  <meta property="og:url" content="https://winf-hsos.github.io/lifi-concept-demos/scrambler/">
+  <meta property="og:image" content="https://winf-hsos.github.io/lifi-concept-demos/scrambler/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 14px; }
+    .modes .plabel { color: var(--gray); font-size: 13px; margin-right: 4px; }
+    button.ctrl.is-active { border-color: var(--yellow); color: var(--yellow); }
+
+    .inputs { display: grid; grid-template-columns: minmax(200px, 3fr) minmax(140px, 1fr); gap: 12px; }
+    textarea, input.key {
+      width: 100%;
+      box-sizing: border-box;
+      background: #0c0e10;
+      color: var(--white);
+      border: 1px solid var(--gray-dark);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    input.key { color: var(--yellow); }
+    textarea:focus, input.key:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .inputs label { display: block; color: var(--gray); font-size: 13px; margin-bottom: 6px; }
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 4px; }
+    .presets .plabel { color: var(--gray); font-size: 13px; margin-right: 4px; }
+
+    /* Die Byte-Zeilen: Klartext, Schluessel wiederholt, gesendet, zurueck.
+       Jede Zeile ein Raster aus Hex-Bytes, rechts die Zeichen wie im Hex-Editor. */
+    .rows { margin-top: 18px; display: grid; gap: 10px; }
+    .row { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start; }
+    .row .rlabel { color: var(--gray); font-size: 13px; padding-top: 6px; }
+    .row .bytes {
+      font-family: var(--mono); font-size: 13px; line-height: 1.9;
+      background: #0c0e10; border: 1px solid var(--gray-dark); border-radius: 8px; padding: 6px 10px;
+      max-height: 118px; overflow: auto; white-space: normal;
+    }
+    .bytes .b { display: inline-block; width: 2.4ch; margin-right: 0.9ch; text-align: center; }
+    .bytes .ch { color: var(--gray); }
+    .row.plain .b { color: var(--white); }
+    .row.key .b { color: var(--yellow); opacity: 0.75; }
+    .row.sent .b { color: var(--yellow); }
+    .row.back .b { color: var(--green); }
+    .row.back .bytes, .row.back .rlabel { border-color: var(--green); }
+    .row .chars { font-family: var(--mono); font-size: 13px; color: var(--gray-light); margin-top: 4px; word-break: break-all; }
+    .row.sent .chars { color: var(--gray); }
+    .row.back .chars { color: var(--green); }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0 6px; }
+    .verdict { color: var(--yellow); font-size: clamp(15px, 2.2vw, 18px); margin: 14px 0 6px; min-height: 1.6em; }
+    .verdict.warn { color: var(--red); }
+    .verdict.ok { color: var(--green); }
+
+    /* Brute-Force-Versuche: die aktuelle Lesart, waehrend die 256 durchlaufen */
+    .tries { font-family: var(--mono); font-size: 13px; color: var(--gray-light); background: #0c0e10; border: 1px solid var(--gray-dark); border-radius: 8px; padding: 10px 12px; margin-top: 10px; min-height: 3em; white-space: pre-wrap; word-break: break-all; }
+    .tries .k { color: var(--yellow); }
+    .tries .found { color: var(--green); }
+
+    /* Bildmodus: Original und verschluesselt nebeneinander, gleich gross */
+    .pics { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-top: 16px; }
+    .pics figure { margin: 0; text-align: center; }
+    .pics canvas { width: 100%; max-width: 384px; aspect-ratio: 1; image-rendering: pixelated; border: 1px solid var(--gray-dark); border-radius: 8px; background: #000; }
+    .pics figcaption { margin-top: 8px; font-family: var(--mono); font-size: 13px; color: var(--gray-light); }
+    .pics figcaption .sub { display: block; color: var(--gray); font-family: var(--text); font-size: 12px; margin-top: 4px; }
+    .keyline { font-family: var(--mono); font-size: 13px; color: var(--yellow); margin-top: 10px; word-break: break-all; }
+
+    .takeaway { color: var(--yellow); text-align: center; margin: 24px 0 4px; font-size: clamp(15px, 2.4vw, 19px); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="demo-topbar">
+    <span>lifi-projekt &middot; concept demos</span>
+    <a href="../">all demos</a>
+  </div>
+
+  <main>
+    <h1>the scrambler</h1>
+    <p class="subtitle">a text, a key, and xor: the key flips the bits, the same key flips them back. then see what a short key gives away.</p>
+
+    <div class="modes" role="group" aria-label="mode">
+      <span class="plabel">scramble:</span>
+      <button class="ctrl is-active" data-mode="text" aria-pressed="true">a text</button>
+      <button class="ctrl" data-mode="picture" aria-pressed="false">the parrot</button>
+    </div>
+
+    <!-- ===== text mode ===== -->
+    <section id="mode-text">
+      <div class="inputs">
+        <div>
+          <label for="in-text">the message</label>
+          <textarea id="in-text" spellcheck="false"></textarea>
+        </div>
+        <div>
+          <label for="in-key">the key (repeated as often as needed)</label>
+          <input class="key" id="in-key" type="text" spellcheck="false" autocomplete="off" maxlength="64">
+        </div>
+      </div>
+      <div class="presets" id="presets" role="group" aria-label="examples">
+        <span class="plabel">try:</span>
+        <button class="ctrl" data-p="noon">meet at noon · key lifi</button>
+        <button class="ctrl" data-p="one">a sentence · one-byte key</button>
+        <button class="ctrl" data-p="zero">the key of zeros</button>
+        <button class="ctrl" data-p="long">a key as long as the message</button>
+      </div>
+      <div class="hint">every character is one byte. the key is written under the message, repeated; each byte of the message is xor-ed with the key byte beneath it. keys 1 to 4 pick an example.</div>
+
+      <div class="rows">
+        <div class="row plain"><div class="rlabel">plain</div><div><div class="bytes" id="row-plain"></div></div></div>
+        <div class="row key"><div class="rlabel">key</div><div><div class="bytes" id="row-key"></div></div></div>
+        <div class="row sent"><div class="rlabel">sent</div><div><div class="bytes" id="row-sent"></div><div class="chars" id="chars-sent"></div></div></div>
+        <div class="row back" id="row-back-wrap" hidden><div class="rlabel">back</div><div><div class="bytes" id="row-back"></div><div class="chars" id="chars-back"></div></div></div>
+      </div>
+
+      <div class="actions">
+        <button class="ctrl" id="btn-decrypt">decrypt with the same key</button>
+        <button class="ctrl" id="btn-brute">try all 256 keys</button>
+        <span class="hint" id="brute-hint">the second button needs a key of one character.</span>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="tries" id="tries" hidden></div>
+    </section>
+
+    <!-- ===== picture mode ===== -->
+    <section id="mode-picture" hidden>
+      <div class="presets" role="group" aria-label="key length">
+        <span class="plabel">key:</span>
+        <button class="ctrl" data-k="1">one byte</button>
+        <button class="ctrl is-active" data-k="3">three bytes</button>
+        <button class="ctrl" data-k="4">four bytes</button>
+        <button class="ctrl" data-k="otp">as long as the picture, random, used once</button>
+      </div>
+      <div class="hint">the raw picture is 256 × 256 points, three bytes each, 196,608 bytes. every byte is xor-ed with the key byte beneath it; a short key repeats. the neighbouring team simply displays what it read.</div>
+      <div class="keyline" id="keyline"></div>
+      <div class="pics">
+        <figure><canvas id="cv-plain" width="256" height="256"></canvas><figcaption>the parrot<span class="sub">what you send, before the key</span></figcaption></figure>
+        <figure><canvas id="cv-sent" width="256" height="256"></canvas><figcaption id="cap-sent">what goes over the link<span class="sub">what the neighbouring team sees</span></figcaption></figure>
+      </div>
+      <div class="actions">
+        <button class="ctrl" id="btn-brute-pic">try all 256 keys</button>
+        <button class="ctrl" id="btn-newkey">new random key</button>
+        <span class="hint" id="brute-pic-hint">the first button needs the one-byte key. it keeps the smoothest of the 256 results: a picture has neighbours that resemble each other, noise has not.</span>
+      </div>
+      <div class="verdict" id="verdict-pic"></div>
+    </section>
+
+    <div class="takeaway">the method may be public. the key must not, and it must be long enough that neither guessing nor looking gives it away.</div>
+  </main>
+
+  <div class="demo-footer">
+    <span>concept: <a href="https://docs.lifi-project.de/concepts/encryption.html">encryption</a></span>
+    <span><a href="../">all demos</a></span>
+  </div>
+
+  <!-- Versionsnummer bei jeder app.js-Aenderung hochzaehlen: umgeht den Browser-Cache. -->
+  <script src="app.js?v=2"></script>
+</body>
+</html>
