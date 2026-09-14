@@ -7,10 +7,14 @@ Live: <https://winf-hsos.github.io/lifi-concept-demos/>
 ## Struktur
 
 ```
-index.html            Übersichtsseite, sortiert nach Konzepten
+index.html            Übersichtsseite: Kartenraster mit Suchfeld und Konzept-Labels
 assets/style.css      gemeinsames Look & Feel (Designwerte des LiFi-Projekts)
-byte-switchboard/     ein Ordner je Demonstrator: index.html + app.js
+assets/overview.js    Live-Filter der Übersichtsseite (Suche und Labels, Zustand in ?q= und ?concept=)
+tools/make_thumbs.py  erzeugt aus jeder preview.png das thumb.png für die Karte
+byte-switchboard/     ein Ordner je Demonstrator: index.html + app.js + preview.png + thumb.png
 ```
+
+Die Übersichtsseite zeigt jeden Demonstrator als Karte mit Vorschaubild, Konzept-Label, Name und Beschreibung, in der Reihenfolge der Kurskonzepte. Das Suchfeld filtert beim Tippen über Name, Beschreibung und Label (`/` springt hinein, Escape leert es); ein Klick auf ein Label, in der Leiste oben oder auf einer Karte, filtert nach dem Konzept, ein zweiter Klick hebt es auf. Beides steht in der Adresse, sodass sich eine gefilterte Ansicht verlinken lässt: `?concept=code-systems` oder `?q=photo`. Die Konzeptnamen in `data-concept` sind die Seitennamen der Kurs-Website (`concepts/<name>.html`).
 
 ## Regeln für Demonstratoren
 
@@ -19,7 +23,7 @@ byte-switchboard/     ein Ordner je Demonstrator: index.html + app.js
 - **Look & Feel aus `assets/style.css`.** Schwarzer Grund, die acht Kursfarben als CSS-Variablen (Farbe ist Bedeutung: Blau verweist, Gelb merkt an, Rot ist der sparsame Hingucker), Arial für Text, Roboto Mono für alles Zählbare, durchgehende Kleinschreibung wie auf den Folien. Demo-spezifisches CSS bleibt in der jeweiligen `index.html`.
 - **Bedienbar mit Maus, Touch und Tastatur.** Interaktive Elemente sind echte Buttons mit `aria`-Attributen, keine Canvas-Flächen.
 - **Rahmen einhalten:** Kopfzeile mit Projektbezug und Link `all demos`, Footer mit Link zur Konzeptseite der Kurs-Website und zurück zur Übersicht.
-- **Neue Demos** bekommen einen Ordner, eine Karte auf der Übersichtsseite unter ihrem Konzept, und werden von den Folien des zugehörigen Inputs verlinkt.
+- **Neue Demos** bekommen einen Ordner, eine Karte auf der Übersichtsseite (ein `article.card` mit `data-concept`, an der Stelle ihres Konzepts in der Reihenfolge des Kurses; fehlt das Konzept in der Label-Leiste, dort einen Button ergänzen), ein `thumb.png` aus `python tools/make_thumbs.py`, und werden von den Folien des zugehörigen Inputs verlinkt.
 - **Embed-Modus für Folien.** Jede Demo kennt `?embed=1` (eine Zeile am Anfang von `app.js` setzt `body.embed`). Dann verschwinden per `assets/style.css`: Kopfzeile, `h1` und `.subtitle`, Tastenhinweise `.hint`, Fußzeile und Merksatz `.takeaway`; alles, was eine Demo darüber hinaus nur im Browser braucht (Stationsmenüs, Einleitungen), trägt die Klasse `.embed-hide`. Was bleibt, ist die Sache selbst: Bedienelemente, Anzeige, Zahlen, Legenden. Eine Demo mit mehreren Stationen wählt die Station per Adresse (etwa `gate-lab/?circuit=flip-flop&embed=1`), damit eine Folie genau einen Fall zeigt. Ebenso wählt eine Demo mit Einstellungen ihren Fall per Adresse (etwa `pixel-filter/?picture=parrot&mode=rgb&filter=brighter&embed=1`) und blendet die Einstellzeile im Embed-Modus aus: Auf der Folie steht nur der eine Fall, den der Vortrag braucht.
 - **Linkvorschau mitliefern.** Jede `index.html` trägt im Kopf einen Open-Graph-Block (`og:title`, `og:description`, `og:url`, `og:image` auf `preview.png` im selben Ordner, 1200x630, ein Screenshot der Demo), damit die Linkkarten der Kurs-Website, Chats und LinkedIn eine Vorschau zeigen. Titel und Beschreibung sind dieselben wie auf der Karte der Übersichtsseite.
 

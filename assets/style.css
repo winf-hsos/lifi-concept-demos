@@ -76,26 +76,62 @@ h1 {
 }
 
 /* Uebersichtsseite */
-.concept-block { margin: 26px 0; }
-.concept-block h2 {
-  font-size: 16px;
-  font-weight: normal;
-  color: var(--gray-light);
-  border-bottom: 1px solid var(--gray-dark);
-  padding-bottom: 6px;
-}
-
-.demo-card {
-  display: block;
+/* Uebersichtsseite: Suchfeld, Konzept-Labels und das Kartenraster. */
+main.overview { max-width: 1240px; }
+.filter { margin: 0 0 20px; }
+.search input {
+  width: 100%;
+  font: 16px var(--mono);
+  color: var(--white);
+  background: var(--bg);
   border: 1px solid var(--gray-dark);
   border-radius: 8px;
-  padding: 14px 18px;
-  margin: 12px 0;
-  color: inherit;
+  padding: 11px 14px;
+  outline: none;
 }
-.demo-card:hover { border-color: var(--blue); text-decoration: none; }
-.demo-card .name { font-size: 20px; }
-.demo-card .desc { color: var(--gray); font-size: 14px; margin-top: 4px; }
+.search input:focus { border-color: var(--blue); }
+.search input::placeholder { color: var(--gray-dark); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tag {
+  font: 13px var(--mono);
+  color: var(--gray-light);
+  background: var(--bg);
+  border: 1px solid var(--gray-dark);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tag:hover { border-color: var(--gray-light); color: var(--white); }
+.tag.is-active { border-color: var(--yellow); color: var(--yellow); }
+.count { color: var(--gray); font-size: 14px; margin: 12px 2px 0; min-height: 1.2em; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gray-dark);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.card[hidden] { display: none; }
+.card:hover, .card:focus-within { border-color: var(--blue); }
+.card .thumb { display: block; background: var(--bg); border-bottom: 1px solid var(--gray-dark); }
+.card .thumb img { display: block; width: 100%; height: auto; aspect-ratio: 600 / 245; object-fit: cover; }
+.card .body { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 6px; }
+.card .body .tag { align-self: flex-start; }
+.card .name { font-size: 20px; color: var(--white); }
+.card:hover .name { color: var(--blue); }
+.card .desc { color: var(--gray); font-size: 14px; margin: 0; }
+.empty { color: var(--gray); font-size: 16px; margin: 24px 2px; }
+button.link { font: inherit; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; }
+button.link:hover { text-decoration: underline; }
 .demo-soon { color: var(--gray-dark); font-size: 14px; margin: 12px 2px; }
 
 /* Bedienelemente: bewusst zurueckhaltend, die Sache steht im Zentrum */

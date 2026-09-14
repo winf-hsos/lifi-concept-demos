@@ -16,7 +16,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=20260914a">
 </head>
 <body>
   <div class="demo-topbar">
@@ -24,139 +24,200 @@
     <a href="https://docs.lifi-project.de/">course website</a>
   </div>
 
-  <main>
+  <main class="overview">
     <h1>concept demos</h1>
     <p class="subtitle">small interactive apps, one idea each. play with them; the concepts are from the lifi project.</p>
 
-    <section class="concept-block">
-      <h2>input, processing &amp; output</h2>
-      <a class="demo-card" href="ipo-test-lab/">
-        <div class="name">the ipo test lab</div>
-        <div class="desc">change sensor values and the classification rule, compare actual with expected output, and watch the test pass or fail.</div>
-      </a>
-    </section>
+    <div class="filter">
+      <label class="search">
+        <span class="visually-hidden">search demos</span>
+        <input id="search" type="search" placeholder="search demos&hellip; (press / to focus)" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="tags" id="tags" role="group" aria-label="filter by concept">
+        <button class="tag is-active" data-concept="" aria-pressed="true">all</button>
+        <button class="tag" data-concept="input-processing-output" aria-pressed="false">input, processing &amp; output</button>
+        <button class="tag" data-concept="measurement-and-experiments" aria-pressed="false">measurement &amp; experiments</button>
+        <button class="tag" data-concept="symbols-and-information" aria-pressed="false">symbols &amp; information</button>
+        <button class="tag" data-concept="analog-and-digital" aria-pressed="false">analog &amp; digital</button>
+        <button class="tag" data-concept="signal-and-noise" aria-pressed="false">signal &amp; noise</button>
+        <button class="tag" data-concept="sampling-and-synchronization" aria-pressed="false">sampling &amp; synchronization</button>
+        <button class="tag" data-concept="protocols" aria-pressed="false">protocols</button>
+        <button class="tag" data-concept="throughput-and-limits" aria-pressed="false">throughput &amp; limits</button>
+        <button class="tag" data-concept="number-systems" aria-pressed="false">number systems</button>
+        <button class="tag" data-concept="code-systems" aria-pressed="false">code systems</button>
+        <button class="tag" data-concept="files" aria-pressed="false">files</button>
+        <button class="tag" data-concept="logic-and-arithmetic" aria-pressed="false">logic &amp; arithmetic</button>
+        <button class="tag" data-concept="compression" aria-pressed="false">compression</button>
+      </div>
+      <p class="count" id="count" aria-live="polite"></p>
+    </div>
 
-    <section class="concept-block">
-      <h2>measurement and experiments</h2>
-      <a class="demo-card" href="noisy-sensor/">
-        <div class="name">the noisy sensor</div>
-        <div class="desc">send a symbol over a noisy link and let the same readings decide it three times: alone, averaged over five, averaged over ten. fewer wrong decisions, less speed.</div>
-      </a>
-    </section>
+    <div class="grid" id="grid">
 
-    <section class="concept-block">
-      <h2>symbols &amp; information</h2>
-      <a class="demo-card" href="question-game/">
-        <div class="name">question game</div>
-        <div class="desc">find the secret face among sixteen: every answer shrinks the crowd, the shrinking is measured in bits, and the halving strategy shows why four questions are enough.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="input-processing-output">
+        <a class="thumb" href="ipo-test-lab/" tabindex="-1" aria-hidden="true"><img src="ipo-test-lab/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="input-processing-output">input, processing &amp; output</button>
+          <a class="name" href="ipo-test-lab/">the ipo test lab</a>
+          <p class="desc">change sensor values and the classification rule, compare actual with expected output, and watch the test pass or fail.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>analog &amp; digital</h2>
-      <a class="demo-card" href="copier/">
-        <div class="name">the copier</div>
-        <div class="desc">press copy and hang each generation on the wall: watch the analog picture fade copy by copy, then ask what a file would have done.</div>
-      </a>
-      <a class="demo-card" href="photo-digitiser/">
-        <div class="name">the photo digitiser</div>
-        <div class="desc">turn an analog photo into numbers: pick resolution and colour depth (down to the game boy's four greys), see the picture change, and watch the byte count grow.</div>
-      </a>
-      <a class="demo-card" href="audio-digitiser/">
-        <div class="name">the audio digitiser</div>
-        <div class="desc">the same two cuts for sound: choose sampling rate and bit depth, see the staircase on the wave &mdash; and hear what gets thrown away.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="measurement-and-experiments">
+        <a class="thumb" href="noisy-sensor/" tabindex="-1" aria-hidden="true"><img src="noisy-sensor/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="measurement-and-experiments">measurement &amp; experiments</button>
+          <a class="name" href="noisy-sensor/">the noisy sensor</a>
+          <p class="desc">send a symbol over a noisy link and let the same readings decide it three times: alone, averaged over five, averaged over ten. fewer wrong decisions, less speed.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>signal &amp; noise</h2>
-      <a class="demo-card" href="distinguishability-lab/">
-        <div class="name">distinguishability lab</div>
-        <div class="desc">send symbols over a noisy channel, oscilloscope style: grow the alphabet, tune the window, inject a disturbance, and watch the error rate fight the throughput.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="symbols-and-information">
+        <a class="thumb" href="question-game/" tabindex="-1" aria-hidden="true"><img src="question-game/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="symbols-and-information">symbols &amp; information</button>
+          <a class="name" href="question-game/">question game</a>
+          <p class="desc">find the secret face among sixteen: every answer shrinks the crowd, the shrinking is measured in bits, and the halving strategy shows why four questions are enough.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>sampling &amp; synchronization</h2>
-      <a class="demo-card" href="drift-simulator/">
-        <div class="name">drift simulator</div>
-        <div class="desc">two clocks, slightly apart: watch the receiver&rsquo;s sampling points wander out of the time slots until the message turns to garbage, then let a sync marker save it.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="analog-and-digital">
+        <a class="thumb" href="copier/" tabindex="-1" aria-hidden="true"><img src="copier/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="analog-and-digital">analog &amp; digital</button>
+          <a class="name" href="copier/">the copier</a>
+          <p class="desc">press copy and hang each generation on the wall: watch the analog picture fade copy by copy, then ask what a file would have done.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>protocols</h2>
-      <a class="demo-card" href="frame-builder/">
-        <div class="name">frame builder</div>
-        <div class="desc">a receiver is already listening to a lit room: pick a preamble and a way to mark the end, then watch what it makes of your message. leave one out and see it miss, misfire or hang.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="analog-and-digital">
+        <a class="thumb" href="photo-digitiser/" tabindex="-1" aria-hidden="true"><img src="photo-digitiser/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="analog-and-digital">analog &amp; digital</button>
+          <a class="name" href="photo-digitiser/">the photo digitiser</a>
+          <p class="desc">turn an analog photo into numbers: pick resolution and colour depth (down to the game boy's four greys), see the picture change, and watch the byte count grow.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>throughput &amp; limits</h2>
-      <a class="demo-card" href="where-did-the-bits-go/">
-        <div class="name">where did the bits go?</div>
-        <div class="desc">send a photo over a framed link: watch every symbol cross while headers, checks and retries consume time without growing the picture.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="analog-and-digital">
+        <a class="thumb" href="audio-digitiser/" tabindex="-1" aria-hidden="true"><img src="audio-digitiser/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="analog-and-digital">analog &amp; digital</button>
+          <a class="name" href="audio-digitiser/">the audio digitiser</a>
+          <p class="desc">the same two cuts for sound: choose sampling rate and bit depth, see the staircase on the wave, and hear what gets thrown away.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>number systems</h2>
-      <a class="demo-card" href="byte-switchboard/">
-        <div class="name">byte switchboard</div>
-        <div class="desc">flip eight bits and watch the number appear: binary, decimal, hex, and the ascii character behind it.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="signal-and-noise">
+        <a class="thumb" href="distinguishability-lab/" tabindex="-1" aria-hidden="true"><img src="distinguishability-lab/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="signal-and-noise">signal &amp; noise</button>
+          <a class="name" href="distinguishability-lab/">distinguishability lab</a>
+          <p class="desc">send symbols over a noisy channel, oscilloscope style: grow the alphabet, tune the window, inject a disturbance, and watch the error rate fight the throughput.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>code systems</h2>
-      <a class="demo-card" href="prefix-trap/">
-        <div class="name">the prefix trap</div>
-        <div class="desc">write your own code words, send a word, and see every reading the receiver could pick. get the list down to one and you have built a code that works.</div>
-      </a>
-      <a class="demo-card" href="pixel-painter/">
-        <div class="name">pixel painter</div>
-        <div class="desc">an 8&times;8 picture, one bit per pixel: paint and watch the bytes write themselves, edit the hex and paint with numbers, then break a byte and see the damage.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="sampling-and-synchronization">
+        <a class="thumb" href="drift-simulator/" tabindex="-1" aria-hidden="true"><img src="drift-simulator/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="sampling-and-synchronization">sampling &amp; synchronization</button>
+          <a class="name" href="drift-simulator/">drift simulator</a>
+          <p class="desc">two clocks, slightly apart: watch the receiver&rsquo;s sampling points wander out of the time slots until the message turns to garbage, then let a sync marker save it.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>files</h2>
-      <a class="demo-card" href="inside-a-file/">
-        <div class="name">inside a file</div>
-        <div class="desc">a real bitmap in a hex editor: header fields underlined, click a pixel to find its three bytes, then change a byte &mdash; and watch the picture obey, or the viewer refuse.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="protocols">
+        <a class="thumb" href="frame-builder/" tabindex="-1" aria-hidden="true"><img src="frame-builder/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="protocols">protocols</button>
+          <a class="name" href="frame-builder/">frame builder</a>
+          <p class="desc">a receiver is already listening to a lit room: pick a preamble and a way to mark the end, then watch what it makes of your message. leave one out and see it miss, misfire or hang.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>logic &amp; arithmetic</h2>
-      <a class="demo-card" href="pixel-filter/">
-        <div class="name">the pixel filter</div>
-        <div class="desc">make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink.</div>
-      </a>
-      <a class="demo-card" href="gate-lab/">
-        <div class="name">the gate lab</div>
-        <div class="desc">switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, and make two gates remember a bit.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="throughput-and-limits">
+        <a class="thumb" href="where-did-the-bits-go/" tabindex="-1" aria-hidden="true"><img src="where-did-the-bits-go/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="throughput-and-limits">throughput &amp; limits</button>
+          <a class="name" href="where-did-the-bits-go/">where did the bits go?</a>
+          <p class="desc">send a photo over a framed link: watch every symbol cross while headers, checks and retries consume time without growing the picture.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>compression</h2>
-      <a class="demo-card" href="text-squeezer/">
-        <div class="name">the text squeezer</div>
-        <div class="desc">paste any text and watch it get packed as you type: repeats become pointers, frequent letters get short codes. one letter over and over squeezes to almost nothing; random letters grow.</div>
-      </a>
-    </section>
+      <article class="card" data-concept="number-systems">
+        <a class="thumb" href="byte-switchboard/" tabindex="-1" aria-hidden="true"><img src="byte-switchboard/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="number-systems">number systems</button>
+          <a class="name" href="byte-switchboard/">byte switchboard</a>
+          <p class="desc">flip eight bits and watch the number appear: binary, decimal, hex, and the ascii character behind it.</p>
+        </div>
+      </article>
 
-    <section class="concept-block">
-      <h2>more concepts</h2>
-      <p class="demo-soon">more demos will appear here as the course grows.</p>
-    </section>
+      <article class="card" data-concept="code-systems">
+        <a class="thumb" href="prefix-trap/" tabindex="-1" aria-hidden="true"><img src="prefix-trap/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="code-systems">code systems</button>
+          <a class="name" href="prefix-trap/">the prefix trap</a>
+          <p class="desc">write your own code words, send a word, and see every reading the receiver could pick. get the list down to one and you have built a code that works.</p>
+        </div>
+      </article>
+
+      <article class="card" data-concept="code-systems">
+        <a class="thumb" href="pixel-painter/" tabindex="-1" aria-hidden="true"><img src="pixel-painter/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="code-systems">code systems</button>
+          <a class="name" href="pixel-painter/">pixel painter</a>
+          <p class="desc">an 8&times;8 picture, one bit per pixel: paint and watch the bytes write themselves, edit the hex and paint with numbers, then break a byte and see the damage.</p>
+        </div>
+      </article>
+
+      <article class="card" data-concept="files">
+        <a class="thumb" href="inside-a-file/" tabindex="-1" aria-hidden="true"><img src="inside-a-file/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="files">files</button>
+          <a class="name" href="inside-a-file/">inside a file</a>
+          <p class="desc">a real bitmap in a hex editor: header fields underlined, click a pixel to find its three bytes, then change a byte and watch the picture obey, or the viewer refuse.</p>
+        </div>
+      </article>
+
+      <article class="card" data-concept="logic-and-arithmetic">
+        <a class="thumb" href="pixel-filter/" tabindex="-1" aria-hidden="true"><img src="pixel-filter/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="logic-and-arithmetic">logic &amp; arithmetic</button>
+          <a class="name" href="pixel-filter/">the pixel filter</a>
+          <p class="desc">make a photo brighter one addition at a time: step through a single pixel with its bits and carries, then let the machine do the other sixteen thousand in a blink.</p>
+        </div>
+      </article>
+
+      <article class="card" data-concept="logic-and-arithmetic">
+        <a class="thumb" href="gate-lab/" tabindex="-1" aria-hidden="true"><img src="gate-lab/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="logic-and-arithmetic">logic &amp; arithmetic</button>
+          <a class="name" href="gate-lab/">the gate lab</a>
+          <p class="desc">switches in, lamps out: flip the inputs of a single gate, watch a half adder carry, chain eight full adders into a byte adder, and make two gates remember a bit.</p>
+        </div>
+      </article>
+
+      <article class="card" data-concept="compression">
+        <a class="thumb" href="text-squeezer/" tabindex="-1" aria-hidden="true"><img src="text-squeezer/thumb.png" alt="" loading="lazy" width="600" height="245"></a>
+        <div class="body">
+          <button class="tag" data-concept="compression">compression</button>
+          <a class="name" href="text-squeezer/">the text squeezer</a>
+          <p class="desc">paste any text and watch it get packed as you type: repeats become pointers, frequent letters get short codes. one letter over and over squeezes to almost nothing; random letters grow.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <p class="empty" id="empty" hidden>nothing matches. <button class="link" id="reset">show all demos</button></p>
+    <p class="demo-soon">more demos will appear here as the course grows.</p>
   </main>
 
   <div class="demo-footer">
     <span>hochschule osnabr&uuml;ck &middot; problem solving with computers</span>
     <span><a href="https://github.com/winf-hsos/lifi-concept-demos">source on github</a></span>
   </div>
+
+  <script src="assets/overview.js?v=20260914a"></script>
 </body>
 </html>
